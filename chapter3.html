@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第 3 章 · 蝶形舞台 — 频谱之诗</title>
+<!-- __sp_head -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='3' fill='%2316161A'/%3E%3Cpath d='M3.5 17.5C6.2 17.5 6.2 7.5 9 7.5s2.8 10 5.5 10 2.8-10 5.5-10' stroke='%23FBFAF7' stroke-width='2.1' fill='none' stroke-linecap='round'/%3E%3Ccircle cx='20' cy='7.5' r='2.3' fill='%239A6212'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#FFFFFF">
+<meta name="description" content="核心交互：8 点 FFT 逐级展开，拖信号、点推进，看频谱被一步一步算出来。">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:title" content="第 3 章 · 蝶形舞台 — 频谱之诗">
+<meta property="og:description" content="核心交互：8 点 FFT 逐级展开，拖信号、点推进，看频谱被一步一步算出来。">
+<meta name="twitter:card" content="summary">
+<link rel="stylesheet" href="assets/css/main.css?v=1791815400">
+<style>
+  .ctrl-row { display:flex; gap:22px; flex-wrap:wrap; align-items:flex-end; }
+  .ctrl-row > * { flex: 1 1 180px; }
+  .stage-info {
+    margin-top:18px; padding:12px 0 12px 18px;
+    background: transparent;
+    border-left:2px solid var(--blue);
+    color: var(--fg-2);
+    font-family: var(--mono); font-size: 13px; line-height: 1.75;
+  }
+  #butterfly { min-height:340px; }
+  .legend {
+    display:flex; gap:22px; flex-wrap:wrap; margin-top:18px;
+    font-family:var(--mono); font-size:11px; letter-spacing:.06em; color:var(--fg-4);
+  }
+  .legend span { display:inline-flex; align-items:center; gap:8px; }
+  .legend i { width:24px; height:0; border-top:2px solid var(--line-2); display:inline-block; }
+  .legend i.dash { border-top-style:dashed; }
+  .legend i.cy { border-color: var(--blue); }
+</style>
+</head>
+<body>
+<header class="topbar" data-nav="3"></header>
+
+<main>
+  <section class="wrap chap-head">
+    <p class="eyebrow">第 3 章 · 核心交互</p>
+    <h2>蝶形舞台：看着频谱被"算"出来</h2>
+    <p class="lede">
+      下面是一个 8 点 FFT 的完整流程。左边是输入信号，
+      中间三级蝶形运算依次展开，右边是最终频谱。
+      拖动滑块改信号，点「下一级」看每一步发生了什么。
+    </p>
+    <div class="analogy" style="margin-top:22px">
+      <div class="ai">接着上一章</div>
+      <div class="at">
+        还记得上一章那只"蝴蝶"吗？一只蝴蝶只是一小步；
+        把很多只蝴蝶<b>按级排好</b>，就拼成了整台"频谱计算机"。
+        这一章你不光看，还能亲手让它一只只扇动翅膀。
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 任务 ===== -->
+  <section class="wrap" style="padding-top:0">
+    <div class="ask" style="margin-bottom:22px">
+      <p class="qt"><span class="ql">怎么玩</span>三个按钮怎么配合用？30 秒看懂</p>
+      <p class="qd">
+        <strong>① 信号类型</strong>：先选一个要分析的信号（正弦/方波/冲激/直流）。<br>
+        <strong>② 频率滑块</strong>：只在选"正弦波"时才有意义，其他信号忽略它。<br>
+        <strong>③ 看下面那张蝶形图</strong>：它一开始是"没开算"的状态。<br>
+        <strong>「下一级」</strong>：一级一级地算，每一级都会高亮"刚算出来的那一列"——
+        想看清过程就点它。<br>
+        <strong>「一次跑完」</strong>：直接跳到最终结果——想快速对比不同信号时点它。<br>
+        <strong>「重置」</strong>：回到初始状态，重新看一遍。<br>
+        <b>建议顺序：</b>先点两次「下一级」感受过程，再换信号类型、点「一次跑完」看结果。
+      </p>
+    </div>
+
+    <div class="quest" data-quest="ch3" id="questBand">
+      <div class="q-ico">?</div>
+      <div class="q-txt">
+        任务：找出哪种信号会产生 <b>多个频率峰</b> —— 切换信号类型并点「一次跑完」验证。
+      </div>
+      <div class="q-state">未开始</div>
+    </div>
+  </section>
+
+  <!-- ===== 控制面板 ===== -->
+  <section class="wrap" style="padding-top:0">
+    <div class="card hi">
+      <div class="ctrl-row">
+        <div>
+          <label class="field">信号类型</label>
+          <select id="kind">
+            <option value="sine">正弦波</option>
+            <option value="square">方波</option>
+            <option value="impulse">冲激（单个脉冲）</option>
+            <option value="dc">直流（全 1）</option>
+          </select>
+        </div>
+        <div>
+          <label class="field">频率：<span class="mono" id="freqOut" style="color:var(--blue)">1 个周期 / 8 点</span></label>
+          <input type="range" id="freq" min="1" max="3" value="1" step="1">
+        </div>
+        <div style="flex:0 0 auto;display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn primary" id="btnStep">下一级 →</button>
+          <button class="btn" id="btnAll">一次跑完</button>
+          <button class="btn" id="btnReset">重置</button>
+        </div>
+      </div>
+      <div class="stage-info" id="stageInfo">
+        等待开始 —— 点击「下一级」逐级展开，或「一次跑完」
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 舞台 ===== -->
+  <section class="wrap" style="padding-top:0">
+    <div class="stage">
+      <div class="scanline"></div>
+      <div class="svg-scroll">
+        <svg id="butterfly" viewBox="0 0 1080 430" role="img" aria-label="8 点 FFT 蝶形运算流程图"></svg>
+      </div>
+      <div class="legend">
+        <span><i class="cy"></i> 当前级（蓝色高亮）</span>
+        <span><i></i> 实线 = 加法支路</span>
+        <span><i class="dash"></i> 虚线 = 减法支路</span>
+        <span style="color:var(--amber);font-weight:700">W<sub>N</sub><sup>k</sup> = 旋转因子</span>
+      </div>
+    </div>
+
+    <div class="ask" style="margin-top:24px">
+      <p class="qt"><span class="ql">怎么看</span>第一次看这张图，先找三个"锚点"</p>
+      <p class="qd">
+        <strong>① 四列 = 四个阶段</strong>：最左是原始输入 x[n]，最右是算完的频谱 X[k]，
+        中间两列是"算到一半的中间结果"。<br>
+        <strong>② 每个圆点 = 一个复数</strong>：圆里的数字是这一级算出来的值，
+        输入列是实数，越往右越可能带上虚部。<br>
+        <strong>③ 每组交叉的两条线 = 一只蝴蝶</strong>：实线走"相加"，虚线走"相减"，
+        交叉处标的 W 就是这一对要乘的旋转因子。<br>
+        点「下一级」时，<span style="color:var(--blue);font-weight:700">蓝色高亮</span>的那一列
+        就是"刚刚算出来的结果"。
+      </p>
+    </div>
+  </section>
+
+  <!-- ===== 手动算一次蝶形 ===== -->
+  <section class="wrap narrow">
+    <p class="eyebrow">动手算一遍</p>
+    <h3>最小的 FFT：2 个点，一步算完</h3>
+    <p class="muted small">
+      把 8 点拆到最细，就是很多个"2 点 FFT"。所以只要搞懂 2 点怎么算，
+      整个舞台的逻辑就通了。假设输入是 <span class="mono">x[0] = 3，x[1] = 1</span>。
+    </p>
+
+    <div class="formula">
+      W<sub>2</sub><sup>0</sup> = e<sup>−j·2π·0/2</sup> = <strong>1</strong>　（旋转因子在 k=0 时恒为 1）
+    </div>
+
+    <div class="grid grid-2" style="margin-top:6px">
+      <div class="card">
+        <span class="tag blue">加法支路（实线）</span>
+        <h3 class="mono" style="margin-top:10px">X[0] = 4</h3>
+        <p class="small muted" style="margin:0">
+          X[0] = x[0] + W·x[1] = 3 + 1×1 = <strong>4</strong><br>
+          物理含义：两个点的"总和"，也就是直流分量。
+        </p>
+      </div>
+      <div class="card">
+        <span class="tag amber">减法支路（虚线）</span>
+        <h3 class="mono" style="margin-top:10px">X[1] = 2</h3>
+        <p class="small muted" style="margin:0">
+          X[1] = x[0] − W·x[1] = 3 − 1×1 = <strong>2</strong><br>
+          物理含义：两个点的"差"，反映它们之间的变化。
+        </p>
+      </div>
+    </div>
+
+    <div class="ask" style="margin-top:24px">
+      <p class="qt"><span class="ql">补个概念</span>图里出现"复数"了——它到底是什么？</p>
+      <p class="qd">
+        你在第 1 章已经知道：一个波有<b>两个属性</b>——多高（振幅）、从哪儿起步（相位）。
+        问题是在 FFT 的中间步骤里，每个中间结果都得<b>同时带着这两个属性</b>往下算。<br>
+        于是数学家发明了一个"打包盒"：<b>复数</b>。它由一个<b>实部</b>和一个<b>虚部</b>组成，
+        你就把它当成一个<b>坐标 (实部, 虚部)</b>——横着走多远、竖着走多远。<br>
+        <b>关键在这：</b>同一个数，换个读法就是"长度 + 角度"。
+        <b>长度</b>正好对应波的<b>振幅</b>，<b>角度</b>正好对应波的<b>相位</b>。<br>
+        所以"复数"不是故弄玄虚，它只是<b>把"多高"和"从哪起步"装进同一个数字</b>而已。
+        <b>虚部也不用怕</b>——它就是个普通的数，只不过在图上画在竖轴上。
+      </p>
+    </div>
+
+    <div class="card" style="margin-top:18px">
+      <h4 style="margin-bottom:10px">记住两句话，等会儿就能读懂那张单位圆</h4>
+      <p class="small muted" style="margin:0">
+        本章后半部分有一张<b>单位圆</b>图，上面每个点都是一个复数 <span class="mono">W</span>。
+        等你看到它时，用这两句话去读：<br>
+        <b>① 箭头指向哪个方向 = 把这个波"延迟多少"</b>（也就是相位）；<br>
+        <b>② 箭头在水平轴上投影的长度 = 乘完以后数值变多少。</b><br>
+        它们都落在同一个圆上，因为<b>长度都是 1</b>——只改变相位，不改变大小。
+      </p>
+    </div>
+
+    <div class="analogy" style="margin-top:20px">
+      <div class="ai">关键一步</div>
+      <div class="at">
+        看出关键了吗？<b>两个输出共用同一对输入</b>，只差一个符号。
+        8 点 FFT 里每一只蝴蝶都是这个套路，只不过 W 不再是 1，
+        而是一个分布在单位圆上的复数——它负责把相位"对齐"，好让相加相减有意义。
+        这就是为什么 FFT 能用 N·log₂N 次运算，而不是 N² 次。
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 双视图 ===== -->
+  <section class="wrap" style="padding-top:0">
+    <div class="grid grid-2">
+      <div class="stage">
+        <h4 style="margin-bottom:12px">输入信号 · 时域 x[n]</h4>
+        <canvas id="waveCanvas"></canvas>
+        <p class="small muted" style="margin:14px 0 0">
+          8 个采样点。拖上面的滑块改变它的频率。
+        </p>
+      </div>
+      <div class="stage">
+        <h4 style="margin-bottom:12px">输出频谱 · 频域 |X[k]|</h4>
+        <canvas id="specCanvas"></canvas>
+        <p class="small muted" style="margin:14px 0 0">
+          蓝色柱 = 能量集中的主频成分。
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 解读 ===== -->
+  <section class="wrap narrow">
+    <p class="eyebrow">怎么看这张图</p>
+    <ol class="steps">
+      <li>
+        <h4>第 1 级：相邻两点成对</h4>
+        <p class="small muted" style="margin:4px 0 0">
+          间距 1 的两个点配对，做一次蝶形。输出仍是 8 个数，但已经是"局部组合"。
+        </p>
+      </li>
+      <li>
+        <h4>第 2 级：间距拉大到 2</h4>
+        <p class="small muted" style="margin:4px 0 0">
+          配对跨度翻倍。每只蝴蝶用的旋转因子不同，标注在连线中间。
+        </p>
+      </li>
+      <li>
+        <h4>第 3 级：间距 4，得到完整频谱</h4>
+        <p class="small muted" style="margin:4px 0 0">
+          最后一级完成后，最右侧一列（绿色）就是 X[k]。
+        </p>
+      </li>
+    </ol>
+
+    <div class="card">
+      <h4 style="margin-bottom:10px">四种信号，四种频谱</h4>
+      <p class="small muted" style="margin:0 0 14px">
+        先解释一个词：<strong>直流分量（DC）</strong>——它指的是信号里那个
+        <strong>"恒定不变的部分"</strong>。比如一条始终停在 2V 的电压，它"每秒变化 0 次"，
+        对应频率为 0。所以直流在频谱上永远落在最左端（k=0）。
+      </p>
+      <table style="margin-top:4px">
+        <thead><tr><th>信号</th><th>频谱特征</th><th>为什么</th></tr></thead>
+        <tbody>
+          <tr><td>正弦波</td><td>两根对称峰</td><td>只有单一频率</td></tr>
+          <tr><td>方波</td><td>多根峰（奇次谐波）</td><td>由无穷多个正弦叠加</td></tr>
+          <tr><td>冲激</td><td>完全平坦</td><td>时域最集中 → 频域最分散</td></tr>
+          <tr><td>直流</td><td>仅 k=0 有值</td><td>恒定不变 = 变化频率为 0</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="ask" style="margin-top:20px">
+      <p class="qt"><span class="ql">想一想</span>观察一下：为什么"8 点"恰好是"3 级"？</p>
+      <p class="qd">
+        每级都把"成对的距离"翻一倍，从 1 → 2 → 4。翻几次能覆盖全部 8 个点？
+        答案是 <span class="mono">log₂8 = 3</span> 次。所以一个 N 点的 FFT，
+        蝶形级数永远是 <span class="mono">log₂N</span>——这就是它从 N² 降到
+        N·log₂N 的几何来源：<strong>N 个点，每级算 N 次，一共 log₂N 级。</strong>
+      </p>
+    </div>
+
+    <!-- 旋转因子几何 -->
+    <h3 style="margin-top:34px">那 W 到底是什么？——单位圆上的一圈点</h3>
+    <p class="muted small prose-flow">
+      旋转因子 W<sub>N</sub><sup>k</sup> = e<sup>−j·2πk/N</sup> 看起来抽象，
+      但它的几何含义很单纯：<strong>把单位圆等分成 N 份，第 k 个分点。</strong>
+      下图画出了 N=8 时的 8 个旋转因子，从 k=0 的角度 0°，每步逆时针转 45°。<br>
+      <strong>请把这张图和第 1 章那个"相位滑块"联系起来：</strong>
+      它就是那个相位滑块的技术版——<b>每个 W 代表"把这个成分延迟若干个 1/N 周期"</b>。
+      这正是把一堆波"对齐"到同一个时间起点、好让它们能正确相加的必需品。
+    </p>
+
+    <div class="stage" style="margin-top:16px">
+      <div class="svg-scroll">
+      <svg viewBox="0 0 520 320" role="img" aria-label="8 点旋转因子在单位圆上的分布">
+        <!-- 坐标轴 -->
+        <line x1="70" y1="160" x2="450" y2="160" stroke="#E2E2DF" stroke-width="1.2"/>
+        <line x1="260" y1="30" x2="260" y2="290" stroke="#E2E2DF" stroke-width="1.2"/>
+        <text x="452" y="176" font-size="11" fill="#7C7C86">实部</text>
+        <text x="268" y="26" font-size="11" fill="#7C7C86">虚部</text>
+
+        <!-- 单位圆 -->
+        <circle cx="260" cy="160" r="110" fill="none" stroke="#C3CFE8" stroke-width="1.4"/>
+
+        <!-- 8 个点：W_k = e^(-j·2πk/8)，虚部为负 → SVG y 轴向下故 cy 增大 -->
+        <g font-family="JetBrains Mono, monospace" font-size="11">
+          <!-- k=0: (1,0) -->
+          <circle cx="370" cy="160" r="7" fill="#1B3F8F"/>
+          <text x="382" y="155" fill="#1B3F8F" font-weight="700">k=0</text>
+          <!-- k=1: (0.707,-0.707) → SVG(337.8, 237.8) -->
+          <circle cx="337.8" cy="237.8" r="7" fill="#1B3F8F"/>
+          <text x="345" y="256" fill="#1B3F8F">k=1</text>
+          <!-- k=2: (0,-1) → SVG(260, 270) -->
+          <circle cx="260" cy="270" r="7" fill="#1B3F8F"/>
+          <text x="266" y="292" fill="#1B3F8F">k=2</text>
+          <!-- k=3: (-0.707,-0.707) → SVG(182.2, 237.8) -->
+          <circle cx="182.2" cy="237.8" r="7" fill="#1B3F8F"/>
+          <text x="110" y="256" fill="#1B3F8F">k=3</text>
+          <!-- k=4: (-1,0) → SVG(150,160) -->
+          <circle cx="150" cy="160" r="7" fill="#9A6212"/>
+          <text x="112" y="180" fill="#8A5710" font-weight="700">k=4</text>
+          <!-- k=5: (-0.707,0.707) → SVG(182.2, 82.2) -->
+          <circle cx="182.2" cy="82.2" r="7" fill="#1B3F8F"/>
+          <text x="110" y="76" fill="#1B3F8F">k=5</text>
+          <!-- k=6: (0,1) → SVG(260, 50) -->
+          <circle cx="260" cy="50" r="7" fill="#1B3F8F"/>
+          <text x="266" y="42" fill="#1B3F8F">k=6</text>
+          <!-- k=7: (0.707,0.707) → SVG(337.8, 82.2) -->
+          <circle cx="337.8" cy="82.2" r="7" fill="#1B3F8F"/>
+          <text x="345" y="76" fill="#1B3F8F">k=7</text>
+        </g>
+
+        <!-- 中心 -->
+        <circle cx="260" cy="160" r="2.6" fill="#7C7C86"/>
+        <text x="60" y="310" font-size="11.5" fill="#7C7C86">k=4 落在 (−1, 0)，所以它让数值"翻个负号"——这就是加减支路对称的由来</text>
+      </svg>
+      </div>
+    </div>
+
+    <div class="analogy" style="margin-top:20px">
+      <div class="ai">打个比方</div>
+      <div class="at">
+        把 W 想成<b>摩天轮的 8 个座舱</b>：k 就是座舱编号，编号越大，
+        它离"起点"转了越大的角度。<b>k=4 正好转到对面（180°）</b>，
+        所以乘上它等于把数值取反——这让"上半圈"和"下半圈"的结果
+        只差一个符号，省掉了一半计算。这就是 W 的周期性与对称性，
+        也是 FFT 能"一份输入算两个输出"的根本原因。
+      </div>
+    </div>
+
+    <div class="quest" data-quest="ch3b" style="margin-top:20px">
+      <div class="q-ico">?</div>
+      <div class="q-txt">
+        任务：1024 点 FFT 需要 <b>几级</b>蝶形？
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+          <button class="btn" data-lv="0">8 级</button>
+          <button class="btn" data-lv="0">16 级</button>
+          <button class="btn" data-lv="1">10 级</button>
+          <button class="btn" data-lv="0">32 级</button>
+        </div>
+      </div>
+      <div class="q-state">未完成</div>
+    </div>
+  </section>
+
+  <!-- ===== 采样定理 ===== -->
+  <section class="wrap narrow">
+    <p class="eyebrow">边界条件 · 采样定理</p>
+    <h3>能拆出哪些频率？——有一条硬上限</h3>
+    <p class="muted small prose-flow">
+      前面我们一路在"拆频率"，但有一个问题一直没回答：
+      <strong>频谱能覆盖到多高的频率？</strong>
+      答案是：<strong>有一道硬上限，而且它由你的采样率决定。</strong>
+    </p>
+
+    <div class="ask" style="margin-top:20px">
+      <p class="qt"><span class="ql">先猜一猜</span>每秒记 100 次，能看出多快的振动？</p>
+      <p class="qd">
+        假设你每秒只记录 <span class="mono">100</span> 个数据点（奈奎斯特上限 50 Hz）。
+        那么一个每秒振动 <strong>70 次</strong>的信号（70 Hz），你能从记录里认出来吗？
+      </p>
+    </div>
+
+    <p class="small muted prose-flow">
+      <strong>认不出来——而且它会"伪装"成另一个频率。</strong>
+      这不是精度不够，是<strong>根本性的信息丢失</strong>：
+      100 个采样点里，70 Hz 的信号每转一圈只被记到约 1.4 个点，
+      它看起来和一个 100−70 = 30 Hz 的慢波完全一样。
+      这种现象叫<strong>混叠（aliasing）</strong>。
+    </p>
+
+    <div class="card" style="margin-top:20px">
+      <h4 style="margin-bottom:12px">采样定理（Nyquist–Shannon）</h4>
+      <p class="small" style="margin:0 0 12px">
+        要无失真地还原一个信号，<strong>采样率必须大于信号最高频率的 2 倍</strong>：
+      </p>
+      <div class="formula" style="margin-bottom:14px">
+        f<sub>采样</sub> &nbsp;&gt;&nbsp; 2 × f<sub>最高</sub>
+      </div>
+      <p class="small" style="margin:0 0 10px">
+        反过来说，采样率一旦定下来，<strong>能分析到的最高频率</strong>就定死了：
+      </p>
+      <div class="formula" style="margin-bottom:14px">
+        f<sub>可分析上限</sub> &nbsp;=&nbsp; f<sub>采样</sub> / 2
+      </div>
+      <p class="small muted" style="margin:0">
+        这个"采样率的一半"叫<strong>奈奎斯特频率</strong>。超过它的成分不会消失，
+        而是<strong>折叠</strong>回低频区、污染频谱——所以工程上采样前必须先做
+        "抗混叠滤波"，把过高的频率先滤掉。
+      </p>
+    </div>
+
+    <table class="data" style="margin-top:24px">
+      <thead>
+        <tr><th>场景</th><th>采样率</th><th>可分析上限</th><th>备注</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>电话语音</td><td>8 kHz</td><td>4 kHz</td><td>刚好覆盖人声主要成分</td></tr>
+        <tr><td>CD 音质</td><td>44.1 kHz</td><td>22.05 kHz</td><td>略高于人耳上限 20 kHz</td></tr>
+        <tr><td>本章演示</td><td>—</td><td>N/2 个频率点</td><td>数字频谱天然只算到 N/2</td></tr>
+      </tbody>
+    </table>
+    <p class="small muted prose-flow" style="margin-top:14px">
+      你会发现：数字频谱<strong>天生就是左右对称的</strong>——第 k 根和第 N−k 根柱子
+      永远成对出现。根源就在这里：能独立表达的最高频率只到 N/2，
+      再往上的那一半只是它的镜像，并不携带新信息。
+    </p>
+  </section>
+
+  <!-- ===== 小结 ===== -->
+  <section class="wrap narrow">
+    <div class="card">
+      <h3>本章小结</h3>
+      <p style="margin-bottom:10px">
+        到这儿，"这段声音里有哪几个音"已经有了完整答案。把这一章压缩成三句话：
+      </p>
+      <p class="small" style="margin:0 0 8px">
+        <strong>① 一只蝴蝶 = 一加一减。</strong>同样的两个输入、同样的旋转因子乘法，
+        结果只差一个符号，所以"算一次、得两个"——这是省下一半工作量的关键。
+      </p>
+      <p class="small" style="margin:0 0 8px">
+        <strong>② W 是"相位对齐器"。</strong>它就是第 1 章那个相位滑块的技术版，
+        负责在合并前把两路波对到同一起点，否则相加相减没有意义。
+      </p>
+      <p class="small" style="margin:0 0 12px">
+        <strong>③ 级数 = log₂N。</strong>8 点用 3 级、1024 点用 10 级——
+        每一级只做 N 次运算，这就是 FFT 从 N² 降到 N·log₂N 的全部秘密。
+      </p>
+      <p style="margin-bottom:0">
+        算法本身讲完了。<strong>下一章换个角度：这套算法在现实世界里，究竟值多少钱。</strong>
+      </p>
+    </div>
+  </section>
+
+  <div class="wrap pager">
+    <a href="chapter2.html"><span class="dir">← 上一章</span><span class="ttl">从 DFT 到 FFT</span></a>
+    <a class="next" href="chapter4.html"><span class="dir">下一章 →</span><span class="ttl">频谱之用</span></a>
+  </div>
+</main>
+
+<footer class="site-footer"></footer>
+<script src="assets/js/site.js"></script>
+<script src="assets/js/butterfly.js"></script>
+<script>
+// 第 3 章附加任务：级数 = log₂N
+(function () {
+  document.querySelectorAll('[data-lv]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var ok = btn.getAttribute('data-lv') === '1';
+      if (ok) {
+        if (!window.Site.questDone('ch3b')) {
+          window.Site.completeQuest('ch3b', '对！log₂1024 = 10，所以是 10 级');
+        }
+        document.querySelectorAll('[data-lv]').forEach(function (b) { b.disabled = true; });
+      } else {
+        window.Site.toast('提示：2 的几次方等于 1024？', '');
+        btn.style.borderColor = 'var(--rose)';
+      }
+    });
+  });
+})();
+</script>
+</body>
+</html>

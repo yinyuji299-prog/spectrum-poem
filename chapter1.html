@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第 1 章 · 时域与频域 — 频谱之诗</title>
+<!-- __sp_head -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='3' fill='%2316161A'/%3E%3Cpath d='M3.5 17.5C6.2 17.5 6.2 7.5 9 7.5s2.8 10 5.5 10 2.8-10 5.5-10' stroke='%23FBFAF7' stroke-width='2.1' fill='none' stroke-linecap='round'/%3E%3Ccircle cx='20' cy='7.5' r='2.3' fill='%239A6212'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#FFFFFF">
+<meta name="description" content="讲清傅里叶变换是什么、为什么需要、凭什么成立；并用合成、频率试探、反相抵消三个实验亲手验证。">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:title" content="第 1 章 · 时域与频域 — 频谱之诗">
+<meta property="og:description" content="讲清傅里叶变换是什么、为什么需要、凭什么成立；并用合成、频率试探、反相抵消三个实验亲手验证。">
+<meta name="twitter:card" content="summary">
+<link rel="stylesheet" href="assets/css/main.css?v=1791815400">
+</head>
+<body>
+<header class="topbar" data-nav="1"></header>
+
+<main>
+  <section class="wrap chap-head">
+    <p class="eyebrow">第 1 章</p>
+    <h2>同一段声音，两种看法</h2>
+    <p class="lede">
+      想象你在听一首歌。歌手唱了一个长音——<span class="hl">你听到的是"这个音有多高"</span>，
+      而工程师看到的是一条上下起伏的曲线。
+      这两种描述说的是同一件事，只是问的问题不一样。
+    </p>
+  </section>
+
+  <!-- ===== 傅里叶变换是什么、为什么、什么原理 ===== -->
+  <section class="wrap narrow">
+    <p class="eyebrow">先讲清楚三件事</p>
+    <h3>傅里叶变换：它是什么？为什么需要？凭什么成立？</h3>
+    <p class="muted prose-flow">
+      在往下走之前，我们必须先把这三个问题讲透。不然后面所有的公式和动画，
+      你都只会觉得"挺酷，但不知道在干嘛"。
+    </p>
+
+    <!-- 问题 1 -->
+    <div class="card" style="margin-top:24px">
+      <span class="tag blue">问题一</span>
+      <h4 style="margin:10px 0 10px">傅里叶变换，到底是个什么东西？</h4>
+      <p class="small" style="margin:0 0 12px">
+        一句话：<strong>它是一种"换视角"的工具</strong>。同一个信号，有两种看一眼的方式——
+      </p>
+      <table style="margin:0">
+        <thead><tr><th>视角</th><th>横轴是什么</th><th>你能看出什么</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>时域</strong>（波形图）</td>
+            <td>时间</td>
+            <td>每一刻信号是多强——像看一段心电图</td>
+          </tr>
+          <tr>
+            <td><strong>频域</strong>（频谱图）</td>
+            <td>频率</td>
+            <td>信号里有哪些"音"、各有多响——像看一张配料表</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="small" style="margin:14px 0 0">
+        傅里叶变换，就是<strong>从"时域"翻到"频域"的那一步操作</strong>。
+        它不改变信号本身，只是换一个角度把它重新描述一遍。
+      </p>
+    </div>
+
+    <!-- 问题 2 -->
+    <div class="card" style="margin-top:20px">
+      <span class="tag amber">问题二</span>
+      <h4 style="margin:10px 0 10px">为什么非要换这个视角？时域不够用吗？</h4>
+      <p class="small" style="margin:0 0 12px">
+        <strong>因为时域会把信息"搅在一起"。</strong>看这个例子——
+      </p>
+      <p class="small" style="margin:0 0 14px">
+        假设一支乐队在演奏：贝斯、人声、镲片同时发声。你录下来的波形，
+        是它们<strong>全部叠加</strong>后的一条曲线。从这条曲线上：
+      </p>
+      <ul class="small" style="margin:0 0 14px;padding-left:22px">
+        <li>你<strong>看</strong>不出有几个乐器——它们混成了一条线；</li>
+        <li>你<strong>改</strong>不掉其中一个——想给人声降噪，却不知道它藏在哪一段；</li>
+        <li>你<strong>比</strong>不了两段录音——两条曲线看着都乱糟糟，没法说"谁的音更亮"。</li>
+      </ul>
+      <p class="small" style="margin:0">
+        换成频域，这些问题立刻变简单：每个乐器在频谱上是<strong>各自独立的几根柱子</strong>，
+        数柱子就知道有几个音，柱子多高就是多响，想动谁就动谁。
+        <strong>这就是"分解信号"的价值——把混在一起的东西摆分开。</strong>
+      </p>
+    </div>
+
+    <!-- 问题 3 -->
+    <div class="card" style="margin-top:20px">
+      <span class="tag violet">问题三</span>
+      <h4 style="margin:10px 0 10px">凭什么能拆开？原理是什么？</h4>
+      <p class="small" style="margin:0 0 14px">
+        这正是傅里叶本人最了不起的洞察 ——
+        <strong>任何信号（不管多复杂），都能写成若干"纯正弦波"相加。</strong>
+      </p>
+      <div class="analogy" style="margin:0 0 14px">
+        <div class="ai">打个比方</div>
+        <div class="at">
+          就像<b>调色</b>：世界上千千万万种颜色，其实都能用"红绿蓝"三种原色按不同比例调出来。
+          傅里叶发现，<b>信号也有它的"三原色"——正弦波</b>。
+          不同频率、不同振幅的正弦波，能调出任何你想要的波形。
+        </div>
+      </div>
+      <p class="small" style="margin:0 0 14px">
+        既然<strong>任何信号都=一堆正弦波的叠加</strong>，那么"拆解"就变成一道可操作的问题：
+        <strong>拿一个个正弦波去试，看哪些对得上、各自多强。</strong>
+      </p>
+      <p class="small" style="margin:0">
+        <strong>怎么试？</strong>这就是下一节实验要你亲手做的事。
+        剧透一下思路：造一个频率为 f 的标准正弦波，和原信号<strong>逐点相乘再求和</strong>——
+        对得上，加起来就是个大数；对不上，正负相消、接近零。
+        <strong>每个频率都试一遍，得到的"强度表"就是频谱。</strong>
+      </p>
+    </div>
+
+    <!-- 问题 4：一句话串起来 -->
+    <div class="card hi" style="margin-top:20px">
+      <h4 style="margin:0 0 12px">把三件事串成一句话</h4>
+      <p style="margin:0;font-size:15.5px;line-height:1.9">
+        傅里叶变换，是<strong>把"随时间起伏的信号"翻译成"由哪些频率组成"</strong>的一套方法。<br>
+        之所以需要它，是因为<strong>时域把成分搅在一起、看不出门道，频域能把它们摆分开</strong>。<br>
+        它能成立，是因为<strong>傅里叶证明了：任何信号都等于一堆正弦波之和</strong>——
+        既然是"加起来"的，就一定能"减回去"，拆得开。
+      </p>
+    </div>
+  </section>
+
+  <!-- ===== 加深理解：正变换 / 逆变换 ===== -->
+  <section class="wrap narrow">
+    <p class="eyebrow">补充 · 别漏了这层</p>
+    <h3>"变换"是双向的：拆得开，也拼得回</h3>
+    <p class="muted small prose-flow">
+      很多人以为傅里叶变换是"单向拆解"，其实它是一对<strong>可逆</strong>的操作。
+      这对"正反两方向"是理解它的关键。
+    </p>
+    <div class="grid grid-2" style="margin-top:20px">
+      <div class="card">
+        <span class="tag blue">正变换</span>
+        <h4 style="margin:10px 0 8px">时域 → 频域（拆开）</h4>
+        <p class="small muted" style="margin:0">
+          输入一段波形，输出它的频率配料表。<strong>这是"分析"。</strong>
+          你听不清一段嘈杂录音里有几个乐器，做一次正变换就知道了。
+        </p>
+      </div>
+      <div class="card">
+        <span class="tag violet">逆变换</span>
+        <h4 style="margin:10px 0 8px">频域 → 时域（拼回）</h4>
+        <p class="small muted" style="margin:0">
+          输入频率配料表，把波形原样还原出来。<strong>这是"合成"。</strong>
+          音乐合成的原理就在这里——给你想要的频谱，逆变换就能造出对应的声音。
+        </p>
+      </div>
+    </div>
+    <div class="analogy" style="margin-top:20px">
+      <div class="ai">补充一点</div>
+      <div class="at">
+        所以理解傅里叶变换要记住它是<b>一对</b>：一个负责"拆"（分析信号由什么组成），
+        一个负责"拼"（用给定成分合成信号）。本作品主要讲"拆"的那一半——
+        也就是正变换（及其快速算法 FFT）。
+      </div>
+    </div>
+  </section>
+
+  <section class="wrap">
+    <div class="analogy">
+      <div class="ai">打个比方</div>
+      <div class="at">
+        <b>回到那个比方：</b>钢琴上你按下中央 C，你会说"这是 Do"。
+        但如果把这一秒钟琴弦的振动录下来，它其实是一条一秒 262 次上下摆动的曲线。
+        <br><br>
+        <b>「这是 Do」= 频域</b>（它是什么音）；
+        <b>「每秒摆动 262 次」= 时域</b>（每一刻在哪里）。
+        两者描述同一件事——这就是音频软件里，波形图和频谱图总是同时出现的原因。
+      </div>
+    </div>
+
+    <div class="ask">
+      <div class="qt">带着刚才的"三件事"，正式出发</div>
+      <p class="qd">
+        你已经知道：傅里叶变换是"换视角的工具"，目的是"把混在一起的成分分开"，
+        原理是"任何信号都能拆成正弦波之和"。<br>
+        接下来两个实验，我们先把这几句话<b>亲眼验证一遍</b>——
+        你先看"正弦波怎么合成复杂波形"，再动手"从波形里拆出频率"。
+      </p>
+    </div>
+  </section>
+
+  <!-- ===== 概念：三根正弦合成 ===== -->
+  <section class="wrap">
+    <p class="eyebrow">实验 1 · 合成</p>
+    <h3>三个音叠在一起，听起来像一个音</h3>
+    <p class="muted prose-flow">
+      下面三条<strong>细线</strong>是三个纯音（每个都只有一个频率），
+      <strong>粗线</strong>是它们加起来的结果。
+      拖动下面的滑块，你会看到：改变任何一个成分，粗线立刻变形——
+      但它依然可以拆回那三条细线。
+    </p>
+
+    <div class="ask" style="margin-top:20px">
+      <p class="qt"><span class="ql">怎么玩</span>先看清这个界面，再动手（30 秒）</p>
+      <p class="qd">
+        <strong>左边画布</strong>是"时域"：横轴是时间，看波形怎么起伏。<br>
+        <strong>右边画布</strong>是"频域"：横轴是频率，看有几根柱子、多高。<br>
+        <strong>下面 6 个滑块</strong>是两个两个一组——<b>每个成分一组</b>：
+        上面那个滑"频率"（这个音多高），下面那个滑"振幅"（这个音多响）。<br>
+        <strong>先做这一步：</strong>把"成分 B"的<b>振幅</b>滑到最左（0），
+        盯着左右两张图看它们同时发生什么变化。
+      </p>
+    </div>
+
+    <div class="grid grid-2" style="margin-top:28px">
+      <div class="stage">
+        <h4 style="margin-bottom:14px">时域 · 波形怎么动</h4>
+        <canvas id="cvSum"></canvas>
+      </div>
+      <div class="stage">
+        <h4 style="margin-bottom:14px">频域 · 有哪些音</h4>
+        <canvas id="cvComp"></canvas>
+      </div>
+    </div>
+
+    <div class="grid grid-3" style="margin-top:20px">
+      <div class="card">
+        <label class="field" style="color:var(--violet)">● 成分 A · 频率 <span class="mono" id="lA">1</span> Hz</label>
+        <input type="range" id="aF" min="1" max="5" value="1" step="1">
+        <label class="field" style="margin-top:14px">振幅 <span class="mono" id="lAa">1.0</span></label>
+        <input type="range" id="aA" min="0" max="10" value="10" step="1">
+      </div>
+      <div class="card">
+        <label class="field" style="color:var(--blue)">● 成分 B · 频率 <span class="mono" id="lB">3</span> Hz</label>
+        <input type="range" id="bF" min="1" max="5" value="3" step="1">
+        <label class="field" style="margin-top:14px">振幅 <span class="mono" id="lBa">0.5</span></label>
+        <input type="range" id="bA" min="0" max="10" value="5" step="1">
+      </div>
+      <div class="card">
+        <label class="field" style="color:var(--amber)">● 成分 C · 频率 <span class="mono" id="lC">5</span> Hz</label>
+        <input type="range" id="cF" min="1" max="5" value="5" step="1">
+        <label class="field" style="margin-top:14px">振幅 <span class="mono" id="lCa">0.25</span></label>
+        <input type="range" id="cA" min="0" max="10" value="3" step="1">
+      </div>
+    </div>
+    <p class="small muted" style="margin-top:18px">
+      <strong style="color:var(--fg)">动手试一下：</strong>
+      把"成分 B"的振幅拉到 0，再拉回来——你会发现那根蓝色的柱子消失了又出现，
+      而波形也跟着变。每一个频率在频域里都是<strong>独立的一根柱子</strong>，
+      这就是频谱分析为什么有用。
+    </p>
+  </section>
+
+  <!-- ===== 概念：DFT 的直觉 ===== -->
+  <section class="wrap">
+    <p class="eyebrow">实验 2 · 分解</p>
+    <h3>反方向：一条波形，拆出它的成分</h3>
+    <p class="muted small prose-flow">
+      现在换一个方向。下面这条深色曲线叫"神秘信号"——我们只知道它是一条正弦波，
+      但不知道频率。
+    </p>
+
+    <div class="ask" style="margin-top:16px">
+      <p class="qt"><span class="ql">怎么玩</span>怎么玩？把它想成"调收音机"</p>
+      <p class="qd">
+        <strong>滑块的每一个位置 = 收音机的一个频道。</strong>
+        蓝色虚线是你"调出来的频道"，深色曲线是"电台真实的信号"。<br>
+        <strong>你的任务：慢慢拖滑块，让蓝线尽量和深色线重合。</strong>
+        重合得越准，说明"这个频率"越像信号的真实频率。<br>
+        右边的<strong>相关系数</strong>就是"重合程度"的分数：<br>
+        · 接近 <span class="mono">1.0</span> = 几乎完全重合（找对了）<br>
+        · 接近 <span class="mono">0</span> = 毫不相干（不是这个频率）<br>
+        这就是 DFT 干的事：<b>把所有频率挨个试一遍，看哪一个最"对得上"。</b>
+      </p>
+    </div>
+
+    <div class="quest" data-quest="ch1">
+      <div class="q-ico">?</div>
+      <div class="q-txt">
+        任务：拖动滑块，让相关系数超过 <b>0.90</b> —— 找出神秘信号的频率。
+      </div>
+      <div class="q-state">未完成</div>
+    </div>
+
+    <div class="stage">
+      <div class="scanline"></div>
+      <canvas id="cvProbe"></canvas>
+      <div class="grid grid-2" style="margin-top:20px;align-items:center">
+        <div>
+          <label class="field">试探频率 <span class="mono num-glow" id="lProbe">1.0</span> Hz</label>
+          <input type="range" id="probe" min="0.5" max="5.5" value="1" step="0.05">
+        </div>
+        <div>
+          <p class="small" style="margin:0">
+            当前匹配度（相关系数）：<strong class="mono num-glow" id="corr" style="font-size:20px">—</strong>
+          </p>
+          <p class="small muted" style="margin:8px 0 0" id="probeHint">
+            拖动滑块，让试探波与信号"贴合"。贴合度最高的位置，就是信号里真实存在的频率。
+          </p>
+        </div>
+      </div>
+      <div id="lockMsg" style="display:none;margin-top:16px;padding:14px 18px;border-radius:10px;
+           background:var(--green-soft);border-left:2px solid var(--green);
+           color:#245640;font-size:14.5px;font-weight:600"></div>
+
+      <!-- ===== 为什么"相乘再求和"能测出频率 ===== -->
+      <div class="ask" style="margin-top:28px">
+        <p class="qt"><span class="ql">多问一层</span>但凭什么"相乘再求和"就能测出频率？</p>
+        <p class="qd">
+          你可能已经照着做了，但心里还是不服：<b>为什么"两个波逐点相乘再加起来"，
+          数值大就代表"这个频率存在"？</b><br>
+          答案就藏在你上面那根滑块里。往下看——<b>下面这张图，是同一个滑块驱动的</b>，
+          它把"相乘"这一步画了出来，你会亲眼看到"抵消"是怎么发生的。
+        </p>
+      </div>
+
+      <canvas id="cvMult" style="margin-top:16px"></canvas>
+      <p class="small muted" id="multNote" style="margin:14px 0 0"></p>
+    </div>
+  </section>
+
+  <!-- ===== 概念：相位 ===== -->
+  <section class="wrap">
+    <p class="eyebrow">实验 3 · 相位</p>
+    <h3>频率一样，也可能互相"抵消"</h3>
+    <p class="muted small prose-flow">
+      前面我们只看"频率"和"振幅"。但一个正弦波还有第三个属性——<strong>相位</strong>：
+      它决定了波在某一刻是"往上顶"还是"往下压"。
+      两个<strong>同频率、同振幅</strong>的波，如果相位相反，加起来会<strong>完全抵消</strong>。
+      这就是降噪耳机的工作原理：发出一个"反相"的声波，把噪声顶掉。
+    </p>
+
+    <div class="quest" data-quest="ch1b">
+      <div class="q-ico">?</div>
+      <div class="q-txt">
+        任务：拖动相位差，找到两个波<b>完全抵消</b>（合成波变平）的那个角度。
+      </div>
+      <div class="q-state">未完成</div>
+    </div>
+
+    <div class="stage">
+      <canvas id="cvPhase"></canvas>
+      <div class="grid grid-2" style="margin-top:20px;align-items:center">
+        <div>
+          <label class="field">相位差：<span class="mono num-glow" id="lPhase">0°</span></label>
+          <input type="range" id="phase" min="0" max="360" value="0" step="5">
+        </div>
+        <div>
+          <p class="small muted" style="margin:0" id="phaseHint">
+            两个波一模一样（0°）时会叠加成原来的两倍；差 180°（反相）时互相抵消变成一条直线。
+          </p>
+        </div>
+      </div>
+      <div id="phaseMsg" style="display:none;margin-top:16px;padding:14px 18px;border-radius:10px;
+           background:var(--green-soft);border-left:2px solid var(--green);
+           color:#245640;font-size:14.5px;font-weight:600"></div>
+    </div>
+  </section>
+
+  <!-- ===== 动画：缠绕演示 ===== -->
+  <section class="wrap">
+    <p class="eyebrow">动画演示 · 缠绕</p>
+    <h3>换个方式看见变换：把信号"绕"到圆上</h3>
+    <p class="muted small prose-flow">
+      前面我们用"相乘求和"解释了傅里叶变换。这里换一个更直观的说法——
+      <strong>把信号一圈圈缠到圆上</strong>，然后看它的"重心"偏向哪边。<br>
+      <strong>这是傅里叶变换最著名的可视化</strong>，也是理解它"为什么能测频率"的另一条路。
+    </p>
+
+    <div class="ask" style="margin-top:20px">
+      <p class="qt"><span class="ql">怎么玩</span>拖那个点，看右边的柱子怎么变</p>
+      <p class="qd">
+        <strong>左图</strong>是一条 3 Hz 的波形（就是下面那个"神秘信号"）。<br>
+        <strong>中图</strong>是"缠绕机"：我们让波形按某个速度卷到圆周上，
+        圆盘转速由<strong>你拖动的那个点</strong>决定（拖动或点圆盘内任意位置）。<br>
+        <strong>右图</strong>是缠绕结果的"重心偏离程度"——某一转速下它会突然冲高。<br>
+        <strong>动手：</strong>慢慢拖一圈，注意右图什么时候到最高、什么时候几乎为零，
+        并对照圆心那个数字。
+      </p>
+    </div>
+
+    <div class="grid wind-grid" style="gap:16px;margin-top:24px">
+      <div class="stage">
+        <h4 style="margin-bottom:12px">① 信号 · 时域</h4>
+        <canvas id="anWave"></canvas>
+        <p class="small muted" style="margin:12px 0 0" id="anWaveNote">3 Hz 正弦波，1 秒</p>
+      </div>
+      <div class="stage">
+        <h4 style="margin-bottom:12px">② 缠绕 · 拖动控制转速</h4>
+        <canvas id="anWind" style="cursor:crosshair"></canvas>
+        <p class="small muted" style="margin:12px 0 0">
+          当前转速 <span class="mono" id="anFreq">0.0</span> Hz
+        </p>
+      </div>
+      <div class="stage">
+        <h4 style="margin-bottom:12px">③ 重心 · 强度</h4>
+        <canvas id="anBar"></canvas>
+        <p class="small muted" style="margin:12px 0 0" id="anBarNote">拖动左图圆盘试出峰值</p>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:20px">
+      <h4 style="margin-bottom:10px">为什么会这样？</h4>
+      <p class="small" style="margin:0 0 10px">
+        <strong>转速没对准时：</strong>波形绕在圆上的各段方向乱七八糟，
+        有的在左、有的在右，<strong>互相抵消</strong>，重心几乎落在圆心——强度接近 0。
+      </p>
+      <p class="small" style="margin:0 0 10px">
+        <strong>转速正好等于信号的频率时：</strong>波形每一次"上顶"都刚好绕到圆的同一侧，
+        <strong>所有段朝同一个方向叠加</strong>，重心被推到偏离圆心——强度冲到峰值。
+      </p>
+      <p class="small muted" style="margin:0">
+        这与第 1 章"相乘求和"说的是<strong>同一件事</strong>：
+        缠绕就是"逐点相乘"，重心就是"求和"。
+        把每个转速都试一遍、记录强度，得到的就是<strong>频谱</strong>——
+        而 FFT 只是把这件"暴力试一遍"的事做得极快而已。
+      </p>
+    </div>
+  </section>
+
+  <!-- ===== 动手：真实声音 ============ -->
+  <section class="wrap">
+    <p class="eyebrow">动手 · 真实信号</p>
+    <h3>亲耳"看"见变换：用你的声音做频谱</h3>
+    <p class="muted small prose-flow">
+      前面的演示，信号都是我替你生成的。现在换<strong>你自己的声音</strong>——
+      对它做一次真正的傅里叶变换，看实时频谱怎么随你说话、哼唱而变化。
+    </p>
+
+    <div class="stage" style="margin-top:22px">
+      <div class="grid mic-head" style="gap:16px;align-items:center;margin-bottom:18px">
+        <div>
+          <h4 style="margin-bottom:8px">实时频谱　<span class="muted small">主频 <span class="mono num-glow" id="micFreq">—</span></span></h4>
+          <p class="small muted" style="margin:0" id="micHint">点下方按钮，对它做一次真正的傅里叶变换。声音只在你的浏览器里处理，不会上传。</p>
+        </div>
+        <button class="btn primary" id="micBtn" style="white-space:nowrap">开启麦克风做实时频谱</button>
+      </div>
+      <canvas id="micCanvas"></canvas>
+    </div>
+
+    <div class="ask" style="margin-top:20px">
+      <p class="qt"><span class="ql">怎么玩</span>说句话、哼段旋律，看柱子怎么动</p>
+      <p class="qd">
+        柱子越高的位置，代表那个<strong>频率成分越强</strong>。<br>
+        试着<strong>发一个平稳的"啊——"</strong>，看主频数字稳定在一个值附近；
+        <strong>唱个不同的音高</strong>，主频会整体移动——这就是"音高 = 基频"；
+        <strong>说"嘶"或敲桌子</strong>，高频段会整体抬高，因为这些都是"频率杂、能量散"的声音。<br>
+        这和你前面在合成信号上看到的频谱，是<strong>同一件事</strong>——只不过这一次，数据来自真实世界。
+      </p>
+    </div>
+
+    <div class="quest" data-quest="live_mic" style="margin-top:22px">
+      <div class="q-ico">?</div>
+      <div class="q-txt">任务：开启麦克风，对着它说句话或哼段旋律，看实时频谱随声音起伏。</div>
+      <div class="q-state">未完成</div>
+    </div>
+  </section>
+
+  <!-- ===== 动手：谐波合成 ============ -->
+  <section class="wrap">
+    <p class="eyebrow">动手 · 合成</p>
+    <h3>自己搭一个信号：谐波叠加实验室</h3>
+    <p class="muted small prose-flow">
+      傅里叶说：任何周期信号都能拆成正弦波；反过来，<strong>把正弦波加回去，也能拼出任意波形</strong>。
+      下面四个滑块控制各次谐波的振幅，左边是你拼出的波形，右边是它的频谱。
+    </p>
+
+    <div class="grid demo-2" style="gap:16px;margin-top:22px">
+      <div class="stage">
+        <h4 style="margin-bottom:10px">① 合成波形（时域）</h4>
+        <canvas id="synWave"></canvas>
+      </div>
+      <div class="stage">
+        <h4 style="margin-bottom:10px">② 频谱（频域）</h4>
+        <canvas id="synSpec"></canvas>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:18px">
+      <div class="grid grid-4" style="gap:18px 24px;align-items:end">
+        <div><label class="field">基频 · 1 次（振幅）</label><input type="range" id="h1" min="0" max="1" step="0.01" value="1"></div>
+        <div><label class="field">3 次谐波</label><input type="range" id="h3" min="0" max="0.6" step="0.01" value="0"></div>
+        <div><label class="field">5 次谐波</label><input type="range" id="h5" min="0" max="0.4" step="0.01" value="0"></div>
+        <div><label class="field">7 次谐波</label><input type="range" id="h7" min="0" max="0.3" step="0.01" value="0"></div>
+      </div>
+      <div style="margin-top:16px;display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+        <button class="btn accent" id="synSquare">套用「方波」预设</button>
+        <span class="small muted">提示：方波 = 基频 + 1/3 三次 + 1/5 五次 + 1/7 七次…… 只留基频是纯正弦；慢慢加高频，看方波"长"出来，以及边缘出现的 <strong>吉布斯过冲</strong>。</span>
+      </div>
+    </div>
+
+    <div class="quest" data-quest="live_harm" style="margin-top:22px">
+      <div class="q-ico">?</div>
+      <div class="q-txt">任务：拖动谐波滑块，或点「套用方波预设」，亲手拼出一个波形并看它的频谱。</div>
+      <div class="q-state">未完成</div>
+    </div>
+  </section>
+
+  <!-- ===== 延伸：音高实验室 ===== -->
+  <section class="wrap">
+    <div class="analogy">
+      <div class="ai">延伸一下</div>
+      <div class="at">
+        你已经会"看"频谱了——那能不能反过来，<b>凭听觉 + 频谱去辨认一个音？</b>
+        我在第 1 章之外单独做了一个<b>音高实验室</b>：弹琴键、看实时频谱、玩「听音辨频」小游戏，
+        还顺带介绍了把这件事做成工业级产品的<b>落谱（luopu.net）</b>。
+        <br><a class="btn accent" href="note-lab.html" style="margin-top:14px">去音高实验室 →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 小结 ===== -->
+  <section class="wrap narrow">
+    <div class="card">
+      <h3>本章小结</h3>
+      <p style="margin-bottom:0">
+        时域告诉我们"每一刻的幅值是多少"；频域告诉我们"由哪些频率构成、各占多少"。
+        两者由一对变换公式互相连接——而"快速"算出频域的那套算法，就是下一章的主角：
+        <strong>FFT</strong>。
+      </p>
+    </div>
+  </section>
+
+  <div class="wrap pager">
+    <a href="index.html"><span class="dir">← 返回</span><span class="ttl">作品首页</span></a>
+    <a class="next" href="chapter2.html"><span class="dir">下一章 →</span><span class="ttl">从 DFT 到 FFT</span></a>
+  </div>
+</main>
+
+<footer class="site-footer"></footer>
+<script src="assets/js/site.js"></script>
+<script src="assets/js/live.js"></script>
+<script>
+(function () {
+  var S = window.Site, C = S.C;
+  var U = S.U(), fs = S.fs;
+
+  /* ---------- 实验 1：合成 ---------- */
+  var cvSum = document.getElementById('cvSum');
+  var cvComp = document.getElementById('cvComp');
+  var N = 512;
+
+  function comps() {
+    return [
+      { f: +document.getElementById('aF').value, a: +document.getElementById('aA').value / 10, c: C.violet },
+      { f: +document.getElementById('bF').value, a: +document.getElementById('bA').value / 10, c: C.blue },
+      { f: +document.getElementById('cF').value, a: +document.getElementById('cA').value / 10, c: C.amber }
+    ];
+  }
+
+  function drawSum() {
+    var box = cvSum.parentNode.getBoundingClientRect();
+    var w = Math.max(240, box.width - 40);
+    var ctx = S.fitCanvas(cvSum, w, Math.round(236 * U));
+    S.clearDark(ctx, w, Math.round(236 * U));
+
+    var x0 = 34 * U, y0 = 16 * U, ww = w - 68 * U, hh = 196 * U, mid = y0 + hh / 2;
+    // 网格
+    S.drawGrid(ctx, { x: x0, y: y0, w: ww, h: hh }, 8, 4);
+    S.drawAxis(ctx, { x: x0, y: y0, w: ww, h: hh }, mid);
+
+    var cs = comps();
+    var i, x, t;
+    // 细线：各成分
+    cs.forEach(function (c) {
+      var pts = [];
+      for (i = 0; i < N; i++) {
+        t = i / N * 2 * Math.PI * 2;
+        x = x0 + ww * i / (N - 1);
+        pts.push({ x: x, y: mid - Math.sin(t * c.f) * c.a * (hh / 2 - 14) });
+      }
+      S.glowLine(ctx, pts, c.c, 1.5, false);
+    });
+    // 粗线：合成（发光）
+    var sumPts = [];
+    for (i = 0; i < N; i++) {
+      t = i / N * 2 * Math.PI * 2;
+      var sum = 0;
+      cs.forEach(function (c) { sum += c.a * Math.sin(t * c.f); });
+      x = x0 + ww * i / (N - 1);
+      sumPts.push({ x: x, y: mid - (sum / 1.8) * (hh / 2 - 14) });
+    }
+    S.glowLine(ctx, sumPts, C.fg, 2.6, true);
+
+    ctx.fillStyle = C.fg3; ctx.font = fs(12) + 'px sans-serif';
+    ctx.fillText('时间 →', x0 + ww - 56, y0 + hh + 21);
+  }
+
+  function drawComp() {
+    var box = cvComp.parentNode.getBoundingClientRect();
+    var w = Math.max(240, box.width - 40);
+    var ctx = S.fitCanvas(cvComp, w, Math.round(236 * U));
+    S.clearDark(ctx, w, Math.round(236 * U));
+
+    var x0 = 34 * U, y0 = 16 * U, ww = w - 68 * U, hh = 196 * U;
+    var cs = comps();
+    var slots = 6, step = ww / slots;
+
+    S.drawGrid(ctx, { x: x0, y: y0, w: ww, h: hh }, 6, 4);
+    S.drawAxis(ctx, { x: x0, y: y0, w: ww, h: hh }, y0 + hh);
+
+    cs.forEach(function (c) {
+      var idx = Math.min(slots - 1, c.f - 1);
+      var bh = c.a * (hh - 24);
+      var bx = x0 + idx * step + step * 0.22;
+      var by = y0 + hh - bh;
+      ctx.save();
+      ctx.shadowColor = c.c; ctx.shadowBlur = 16;
+      ctx.fillStyle = c.c;
+      ctx.fillRect(bx, by, step * 0.56, bh);
+      ctx.restore();
+      ctx.fillStyle = C.fg2; ctx.font = fs(11) + 'px "JetBrains Mono", monospace';
+      ctx.fillText(c.f + 'Hz', x0 + idx * step + step * 0.16, y0 + hh + 20);
+    });
+    ctx.fillStyle = C.fg3; ctx.font = fs(12) + 'px sans-serif';
+    ctx.fillText('频率 →', x0 + ww - 54, y0 + hh + 20);
+  }
+
+  function syncLabels() {
+    document.getElementById('lA').textContent = document.getElementById('aF').value;
+    document.getElementById('lAa').textContent = (document.getElementById('aA').value / 10).toFixed(1);
+    document.getElementById('lB').textContent = document.getElementById('bF').value;
+    document.getElementById('lBa').textContent = (document.getElementById('bA').value / 10).toFixed(1);
+    document.getElementById('lC').textContent = document.getElementById('cF').value;
+    document.getElementById('lCa').textContent = (document.getElementById('cA').value / 10).toFixed(1);
+  }
+
+  function redrawSum() { syncLabels(); drawSum(); drawComp(); }
+
+  ['aF','aA','bF','bA','cF','cA'].forEach(function (id) {
+    document.getElementById(id).addEventListener('input', redrawSum);
+  });
+
+  /* ---------- 实验 2：频率试探 ---------- */
+  var cvProbe = document.getElementById('cvProbe');
+  var SIGNAL_F = 3;   // 信号真实频率
+
+  function drawProbe() {
+    var pf = +document.getElementById('probe').value;
+    document.getElementById('lProbe').textContent = pf.toFixed(1);
+
+    var box = cvProbe.parentNode.getBoundingClientRect();
+    var w = Math.max(240, box.width - 40);
+    var ctx = S.fitCanvas(cvProbe, w, Math.round(230 * U));
+    S.clearDark(ctx, w, Math.round(230 * U));
+
+    var x0 = 34 * U, y0 = 16 * U, ww = w - 68 * U, hh = 198 * U, mid = y0 + hh / 2;
+    S.drawGrid(ctx, { x: x0, y: y0, w: ww, h: hh }, 8, 4);
+    S.drawAxis(ctx, { x: x0, y: y0, w: ww, h: hh }, mid);
+
+    var i, x, y, t;
+    // 原信号（深色，粗）
+    var p1 = [];
+    for (i = 0; i < N; i++) {
+      t = i / (N - 1) * 2 * Math.PI * 2;
+      p1.push({ x: x0 + ww * i / (N - 1), y: mid - Math.sin(t * SIGNAL_F) * (hh / 2 - 20) });
+    }
+    S.glowLine(ctx, p1, C.fg, 2.8, false);
+
+    // 试探波（蓝，虚线）
+    var p2 = [];
+    for (i = 0; i < N; i++) {
+      var t2 = i / (N - 1) * 2 * Math.PI * 2;
+      p2.push({ x: x0 + ww * i / (N - 1), y: mid - Math.sin(t2 * pf) * (hh / 2 - 20) });
+    }
+    ctx.save();
+    ctx.setLineDash([7, 6]);
+    S.glowLine(ctx, p2, C.blue, 2.2, false);
+    ctx.restore();
+
+    // 相关系数
+    var num = 0, d1 = 0, d2 = 0, M = 400;
+    for (i = 0; i < M; i++) {
+      var tt = i / (M - 1) * 2 * Math.PI * 2;
+      var s1 = Math.sin(tt * SIGNAL_F), s2 = Math.sin(tt * pf);
+      num += s1 * s2; d1 += s1 * s1; d2 += s2 * s2;
+    }
+    var r = num / Math.sqrt(d1 * d2);
+    var el = document.getElementById('corr');
+    el.textContent = r.toFixed(3);
+    var hint = document.getElementById('probeHint');
+    var match = false;
+
+    if (r > 0.90) {
+      el.style.color = C.green;
+      hint.textContent = '✓ 高度贴合 —— 这个频率确实存在于信号中。';
+      match = true;
+    } else if (Math.abs(r) < 0.2) {
+      el.style.color = C.fg3;
+      hint.textContent = '几乎不相关 —— 信号里没有这个频率。';
+    } else {
+      el.style.color = C.blue;
+      hint.textContent = '部分相关 —— 继续微调，寻找峰值。';
+    }
+
+    // 匹配时：显示"锁定"提示
+    var lock = document.getElementById('lockMsg');
+    if (lock) {
+      if (match) {
+        lock.style.display = 'block';
+        lock.textContent = '频率锁定：' + pf.toFixed(1) + ' Hz —— 这就是神秘信号的真实频率！';
+        if (!S.questDone('ch1')) {
+          S.completeQuest('ch1', '频率锁定成功！你刚刚亲手做了一次频谱分析');
+        }
+      } else {
+        lock.style.display = 'none';
+      }
+    }
+
+    // 图例
+    ctx.font = fs(12) + 'px sans-serif';
+    ctx.fillStyle = C.fg; ctx.fillText('— 神秘信号', x0 + 2, y0 + 14);
+    ctx.fillStyle = C.blue; ctx.fillText('┄ 试探波', x0 + 96, y0 + 14);
+
+    drawMult(pf, r);
+  }
+
+  /* ---------- 相乘并求和：把"抵消"画出来 ---------- */
+  var cvMult = document.getElementById('cvMult');
+  function drawMult(pf, r) {
+    if (!cvMult) return;
+    var box = cvMult.parentNode.getBoundingClientRect();
+    var w = Math.max(240, box.width - 40);
+    var ctx = S.fitCanvas(cvMult, w, Math.round(168 * U));
+    S.clearDark(ctx, w, Math.round(168 * U));
+
+    var x0 = 34 * U, y0 = 14 * U, ww = w - 68 * U, hh = 140 * U, mid = y0 + hh / 2;
+    S.drawGrid(ctx, { x: x0, y: y0, w: ww, h: hh }, 8, 2);
+    S.drawAxis(ctx, { x: x0, y: y0, w: ww, h: hh }, mid);
+
+    // 乘积曲线：快比对 40 个点算，避免 512 点的高频锯齿
+    var M = 40, i, t, prod = [], sum = 0;
+    for (i = 0; i < M; i++) {
+      t = (i + 0.5) / M * 2 * Math.PI * 2;
+      var v = Math.sin(t * SIGNAL_F) * Math.sin(t * pf);
+      sum += v;
+      prod.push({ x: x0 + (i + 0.5) / M * ww, y: mid - v * (hh / 2 - 16) });
+    }
+    sum /= M;
+
+    // 每份乘积画成一根小竖条（正值向上、负值向下）
+    ctx.lineWidth = 1.6;
+    prod.forEach(function (p) {
+      var z = mid - p.y;
+      ctx.strokeStyle = z >= 0 ? 'rgba(27,63,143,.5)' : 'rgba(225,29,72,.5)';
+      ctx.beginPath(); ctx.moveTo(p.x, mid); ctx.lineTo(p.x, p.y); ctx.stroke();
+    });
+
+    // 包络线
+    ctx.save();
+    ctx.setLineDash([5, 4]);
+    S.glowLine(ctx, prod, C.blue, 1.6, false);
+    ctx.restore();
+
+    ctx.font = fs(12) + 'px sans-serif';
+    ctx.fillStyle = C.blue; ctx.fillText('乘积 = 神秘信号 × 试探波', x0 + 2, y0 + 12);
+    ctx.fillStyle = C.fg3; ctx.font = fs(11.5) + 'px sans-serif';
+    ctx.fillText('蓝条 = 正（同向）　红条 = 负（反向）', x0 + 2, y0 + hh - 2);
+
+    // 结论
+    var note = document.getElementById('multNote');
+    if (note) {
+      if (r > 0.90) {
+        note.innerHTML = '把上面所有小条加起来：<b style="color:var(--green)">它们全朝同一个方向，加起来是个大数</b>——' +
+          '所以相关系数接近 1。这，就是"这个频率存在"的<b>完整证据</b>：不是感觉像，是数值算得出来。';
+      } else if (Math.abs(r) < 0.2) {
+        note.innerHTML = '把上面所有小条加起来：<b style="color:var(--rose)">蓝条和红条一样多，正负相抵，总和≈0</b>——' +
+          '所以相关系数接近 0。这就是 DFT 判断"这个频率不存在"的依据：<b>不是找不到，是算出来就是零。</b>';
+      } else {
+        note.innerHTML = '现在小条有正有负、有些互相抵消，所以总和是个中间值（当前 ≈ ' +
+          sum.toFixed(3) + '）——频率没对准。<b>继续拖动，看它从"几乎全蓝"变到"红蓝各半"。</b>';
+      }
+    }
+  }
+
+  document.getElementById('probe').addEventListener('input', drawProbe);
+
+  /* ---------- 实验 3：相位 ---------- */
+  var cvPhase = document.getElementById('cvPhase');
+  function drawPhase() {
+    var deg = +document.getElementById('phase').value;
+    var rad = deg * Math.PI / 180;
+    document.getElementById('lPhase').textContent = deg + '°';
+
+    var box = cvPhase.parentNode.getBoundingClientRect();
+    var w = Math.max(240, box.width - 40);
+    var ctx = S.fitCanvas(cvPhase, w, Math.round(220 * U));
+    S.clearDark(ctx, w, Math.round(220 * U));
+
+    var x0 = 34 * U, y0 = 16 * U, ww = w - 68 * U, hh = 188 * U, mid = y0 + hh / 2;
+    S.drawGrid(ctx, { x: x0, y: y0, w: ww, h: hh }, 8, 4);
+    S.drawAxis(ctx, { x: x0, y: y0, w: ww, h: hh }, mid);
+
+    var i, t, x, A = hh / 2 - 20;
+    // 波 1（紫）
+    var p1 = [];
+    for (i = 0; i < N; i++) {
+      t = i / (N - 1) * 2 * Math.PI * 2;
+      p1.push({ x: x0 + ww * i / (N - 1), y: mid - Math.sin(t) * A });
+    }
+    S.glowLine(ctx, p1, C.violet, 2.0, false);
+    // 波 2（蓝，带相位差）
+    var p2 = [];
+    for (i = 0; i < N; i++) {
+      t = i / (N - 1) * 2 * Math.PI * 2;
+      p2.push({ x: x0 + ww * i / (N - 1), y: mid - Math.sin(t + rad) * A });
+    }
+    S.glowLine(ctx, p2, C.blue, 2.0, false);
+    // 合成波（深色粗线）
+    var p3 = [];
+    for (i = 0; i < N; i++) {
+      t = i / (N - 1) * 2 * Math.PI * 2;
+      var sum = Math.sin(t) + Math.sin(t + rad);
+      p3.push({ x: x0 + ww * i / (N - 1), y: mid - sum * A * 0.62 });
+    }
+    S.glowLine(ctx, p3, C.fg, 2.8, false);
+
+    // 图例
+    ctx.font = fs(12) + 'px sans-serif';
+    ctx.fillStyle = C.violet; ctx.fillText('— 波 1', x0 + 2, y0 + 14);
+    ctx.fillStyle = C.blue; ctx.fillText('— 波 2（有相位差）', x0 + 64, y0 + 14);
+    ctx.fillStyle = C.fg; ctx.fillText('— 合成', x0 + 200, y0 + 14);
+
+    // 判定：反相 180° 时合成波振幅≈0
+    var hint = document.getElementById('phaseHint');
+    var msg = document.getElementById('phaseMsg');
+    var near180 = Math.abs(deg - 180) <= 10;
+    if (near180) {
+      hint.innerHTML = '✓ 反相！两个波完全抵消，合成波是一条直线。';
+      msg.style.display = 'block';
+      msg.textContent = '相位差 ' + deg + '° —— 两个波互相抵消！这正是降噪耳机"反相消噪"的原理。';
+      if (!S.questDone('ch1b')) {
+        S.completeQuest('ch1b', '你发现了"反相抵消"——相位的威力');
+      }
+    } else if (deg < 20) {
+      hint.innerHTML = '两个波同相，合成波是原来的两倍高。试试把相位差拖到 180°。';
+      msg.style.display = 'none';
+    } else {
+      hint.innerHTML = '合成波在变化——继续拖，看看相位差多大时它会"变平"。';
+      msg.style.display = 'none';
+    }
+  }
+
+  document.getElementById('phase').addEventListener('input', drawPhase);
+
+  /* ---------- 动画：缠绕演示（拖动圆盘控制转速） ---------- */
+  var anWave = document.getElementById('anWave');
+  var anWind = document.getElementById('anWind');
+  var anBar  = document.getElementById('anBar');
+  var AN_SRC = 3;          // 被分析的信号频率
+  var AN_MAX = 8;          // 转速上限 Hz
+  var anSpin = 0;          // 当前转速（Hz）
+  var anAuto = true;       // 未拖动时自动旋转
+  var anDrag = false;
+
+  function anBox(cv) {
+    var box = cv.parentNode.getBoundingClientRect();
+    var w = Math.max(240, box.width - 40);
+    var h = Math.min(320, Math.round(w * 0.72));
+    return { w: w, h: h, ctx: S.fitCanvas(cv, w, h) };
+  }
+
+  function dirFromPointer(ev) {
+    var r = anWind.getBoundingClientRect();
+    var px = (ev.touches ? ev.touches[0].clientX : ev.clientX) - r.left;
+    var py = (ev.touches ? ev.touches[0].clientY : ev.clientY) - r.top;
+    // 画布内部坐标（考虑 CSS 缩放）
+    var cx = px * (anWind.width / r.width), cy = py * (anWind.height / r.height);
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    cx /= dpr; cy /= dpr;
+    var S0 = anWind.getBoundingClientRect();
+    var cssW = S0.width, cssH = S0.height;
+    var ox = cssW / 2, oy = cssH / 2;
+    var R = Math.min(cssW, cssH) * 0.40;
+    var vx = (px - ox) / R, vy = (py - oy) / R;
+    var len = Math.hypot(vx, vy) || 1;
+    vx /= len; vy /= len;
+    // 把方向映射到 [0, AN_MAX)
+    var ang = Math.atan2(vy, vx);
+    anSpin = ((ang + Math.PI) / (2 * Math.PI)) * AN_MAX;
+    anAuto = false;
+  }
+
+  if (anWind) {
+    anWind.addEventListener('mousedown', function (e) { anDrag = true; dirFromPointer(e); });
+    window.addEventListener('mousemove', function (e) { if (anDrag) dirFromPointer(e); });
+    window.addEventListener('mouseup', function () { anDrag = false; });
+    anWind.addEventListener('touchstart', function (e) { anDrag = true; dirFromPointer(e); e.preventDefault(); }, { passive: false });
+    anWind.addEventListener('touchmove', function (e) { if (anDrag) dirFromPointer(e); e.preventDefault(); }, { passive: false });
+    anWind.addEventListener('touchend', function () { anDrag = false; });
+  }
+
+  // 信号：1 秒，取 320 个样点
+  var AN_N = 320;
+  function anSignal(t) { return Math.sin(2 * Math.PI * AN_SRC * t); }
+
+  var anLast = 0;
+  var anRAF = 0;
+  function anFrame(ts) {
+    if (document.hidden) { anRAF = 0; return; }
+    if (anAuto) {
+      anSpin += 0.012;
+      if (anSpin >= AN_MAX) anSpin -= AN_MAX;
+    }
+    var el = document.getElementById('anFreq');
+    if (el) el.textContent = anSpin.toFixed(2);
+
+    anDrawWave();
+    var mag = anDrawWind();
+    anDrawBar(mag);
+
+    anRAF = requestAnimationFrame(anFrame);
+  }
+
+  function anDrawWave() {
+    var o = anBox(anWave), ctx = o.ctx, w = o.w, h = o.h;
+    S.clearDark(ctx, w, h);
+    var x0 = 18 * U, y0 = 14 * U, ww = w - 36 * U, hh = h - 34 * U, mid = y0 + hh / 2;
+    S.drawAxis(ctx, { x: x0, y: y0, w: ww, h: hh }, mid);
+    var pts = [], i, t;
+    for (i = 0; i < AN_N; i++) {
+      t = i / (AN_N - 1);
+      pts.push({ x: x0 + ww * t, y: mid - anSignal(t) * (hh / 2 - 10) });
+    }
+    S.glowLine(ctx, pts, C.blue, 2.2, false);
+    ctx.fillStyle = C.fg3; ctx.font = fs(11) + 'px "JetBrains Mono", monospace';
+    ctx.fillText('时间 (秒) →', x0, y0 + hh + 22);
+    ctx.fillStyle = C.fg3;
+    ctx.fillText('0', x0, y0 + hh + 22);
+    ctx.fillText('1', x0 + ww - 6, y0 + hh + 22);
+  }
+
+  function anDrawWind() {
+    var o = anBox(anWind), ctx = o.ctx, w = o.w, h = o.h;
+    S.clearDark(ctx, w, h);
+    var ox = w / 2, oy = h / 2, R = Math.min(w, h) * 0.40;
+
+    ctx.strokeStyle = 'rgba(22,22,26,.10)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(ox, oy, R, 0, 6.2832); ctx.stroke();
+    ctx.beginPath(); ctx.arc(ox, oy, R * 0.5, 0, 6.2832); ctx.stroke();
+
+    // 缠绕曲线：p(t) = R * (1 + x(t)) / 2 的极坐标
+    var sumX = 0, sumY = 0, i, t, ang, rad, px, py, first = true;
+    ctx.beginPath();
+    for (i = 0; i < AN_N; i++) {
+      t = i / (AN_N - 1);
+      ang = -2 * Math.PI * anSpin * t;
+      rad = R * (1 + anSignal(t)) / 2;
+      px = ox + rad * Math.cos(ang);
+      py = oy + rad * Math.sin(ang);
+      if (first) { ctx.moveTo(px, py); first = false; } else ctx.lineTo(px, py);
+      sumX += Math.cos(ang) * anSignal(t);
+      sumY += Math.sin(ang) * anSignal(t);
+    }
+    ctx.strokeStyle = 'rgba(27,63,143,.42)'; ctx.lineWidth = 1.8; ctx.stroke();
+
+    // 重心
+    var cx = sumX / AN_N, cy = sumY / AN_N;
+    var gx = ox + cx * R, gy = oy + cy * R;
+    ctx.strokeStyle = C.amber; ctx.lineWidth = 1.4 * U;
+    ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(gx, gy); ctx.stroke();
+    ctx.fillStyle = C.amber;
+    ctx.beginPath(); ctx.arc(gx, gy, 4.2 * U, 0, 6.2832); ctx.fill();
+
+    // 拖动把手（圆盘上的方向指示）
+    var hx = ox + R * Math.cos(anSpin / AN_MAX * 2 * Math.PI - Math.PI);
+    var hy = oy + R * Math.sin(anSpin / AN_MAX * 2 * Math.PI - Math.PI);
+    ctx.fillStyle = C.blue;
+    ctx.beginPath(); ctx.arc(hx, hy, 5.5 * U, 0, 6.2832); ctx.fill();
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.6 * U;
+    ctx.beginPath(); ctx.arc(hx, hy, 5.5 * U, 0, 6.2832); ctx.stroke();
+
+    ctx.fillStyle = C.fg4;
+    ctx.beginPath(); ctx.arc(ox, oy, 2 * U, 0, 6.2832); ctx.fill();
+
+    return Math.hypot(cx, cy);
+  }
+
+  function anDrawBar(mag) {
+    var o = anBox(anBar), ctx = o.ctx, w = o.w, h = o.h;
+    S.clearDark(ctx, w, h);
+    var x0 = 30 * U, y0 = 16 * U, ww = w - 60 * U, hh = h - 44 * U;
+
+    S.drawGrid(ctx, { x: x0, y: y0, w: ww, h: hh }, 8, 4);
+    S.drawAxis(ctx, { x: x0, y: y0, w: ww, h: hh }, y0 + hh);
+
+    // 当前强度
+    var v = Math.min(1, mag);
+    var bh = v * hh;
+    var g = ctx.createLinearGradient(0, y0 + hh - bh, 0, y0 + hh);
+    g.addColorStop(0, C.blue); g.addColorStop(1, 'rgba(27,63,143,.5)');
+    ctx.fillStyle = g;
+    ctx.fillRect(x0, y0 + hh - bh, ww, bh);
+    ctx.strokeStyle = C.axis; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(x0, y0 + hh); ctx.lineTo(x0 + ww, y0 + hh); ctx.stroke();
+
+    ctx.fillStyle = C.fg3; ctx.font = fs(11) + 'px "JetBrains Mono", monospace';
+    ctx.fillText('缠绕重心偏离程度', x0, y0 - 3);
+    ctx.fillStyle = C.fg; ctx.font = '700 ' + fs(15) + 'px "JetBrains Mono", monospace';
+    ctx.fillText(v.toFixed(3), x0, y0 + 16);
+
+    var note = document.getElementById('anBarNote');
+    if (note) {
+      if (Math.abs(anSpin - AN_SRC) < 0.28) {
+        note.innerHTML = '<span style="color:var(--blue);font-weight:700">峰值！</span>转速 = 信号频率 3 Hz';
+      } else if (v < 0.12) {
+        note.textContent = '几乎抵消 —— 这个转速上信号里没有成分';
+      } else {
+        note.textContent = '继续拖，找出让柱子最高的那个转速';
+      }
+    }
+  }
+
+  function anStart() {
+    if (!anWave || !anWind || !anBar) return;
+    if (!anRAF) anRAF = requestAnimationFrame(anFrame);
+  }
+
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden) anStart();
+  });
+
+  function redrawAll() { redrawSum(); drawProbe(); drawPhase(); }
+  window.addEventListener('resize', redrawAll);
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () { redrawAll(); anStart(); });
+  } else { redrawAll(); anStart(); }
+})();
+</script>
+</body>
+</html>

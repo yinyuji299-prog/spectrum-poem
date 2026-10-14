@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>频谱之诗 · FFT 算法的视觉化与交互式科普</title>
+<!-- __sp_head -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='3' fill='%2316161A'/%3E%3Cpath d='M3.5 17.5C6.2 17.5 6.2 7.5 9 7.5s2.8 10 5.5 10 2.8-10 5.5-10' stroke='%23FBFAF7' stroke-width='2.1' fill='none' stroke-linecap='round'/%3E%3Ccircle cx='20' cy='7.5' r='2.3' fill='%239A6212'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#FFFFFF">
+<meta name="description" content="把 FFT（快速傅里叶变换）从一条教材公式，变成可拖动、看得见的交互实验：五章与 1 个延伸实验、共 14 个互动任务，全部图形由代码实时绘制。零依赖、离线可跑。">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:title" content="频谱之诗 · FFT 算法的视觉化与交互式科普">
+<meta property="og:description" content="把 FFT（快速傅里叶变换）从一条教材公式，变成可拖动、看得见的交互实验：五章与 1 个延伸实验、共 14 个互动任务，全部图形由代码实时绘制。零依赖、离线可跑。">
+<meta name="twitter:card" content="summary">
+<link rel="stylesheet" href="assets/css/main.css?v=1791815400">
+<style>
+  /* 深色开场：全幅铺满。不做成圆角盒子——它是页面，不是卡片 */
+  .hero { background:#141414; color:#fff; padding:96px 0 84px; }
+  .hero-inner { max-width:1180px; margin:0 auto; padding:0 40px 0 214px; }
+  @media (max-width:1180px) { .hero-inner { padding-left:24px; padding-right:24px; } }
+  @media (min-width:1600px) { .hero-inner { max-width:1400px; } }
+  .hero h1 { color:#fff !important; }
+  .hero .sub { color:#f4f4f4 !important; }
+  .hero-badge { color:#f4f4f4 !important; border-bottom-color:#666 !important; }
+  .hero .btn.primary { background:#fff !important; color:#111 !important; }
+  .hero .run-nav { background:transparent; border-bottom:0; padding:0; }
+  .hero .run-nav a { color:#fff; font-size:16px; }
+  .hero-spectrum { border-color:#444 !important; }
+  .hero-mic { color:#111 !important; background:#fff !important; }
+  .hero-note { color:#ddd !important; }
+  .hero h1 { font-size: clamp(64px, 8vw, 112px); letter-spacing: -.055em; line-height: .9; }
+  .hero .sub { max-width: 680px; font-size: clamp(18px, 1.5vw, 22px); }
+  .run-nav {
+    position: sticky; top: 66px; z-index: 40;
+    display: flex; gap: 22px; overflow-x: auto;
+    background: rgba(255,255,255,.92);
+    border-bottom: 1px solid var(--line);
+    padding: 14px 0; margin: 0;
+    font-size: 13px; font-weight: 700;
+  }
+  .run-nav a { color: var(--fg-3); text-decoration: none; white-space: nowrap; }
+  .run-nav a:hover { color: var(--fg); }
+  .full-stage { margin-top: 28px; background: #111; border-radius: 0; }
+  .full-stage canvas { width: 100%; height: clamp(360px, 46vw, 620px); display: block; }
+  .stage-copy { display:flex; justify-content:space-between; gap:24px; margin-top:18px; }
+  .stage-copy p { margin:0; max-width: 640px; color: var(--fg); }
+  .metric { font-family: var(--mono); font-size: clamp(42px,4vw,68px); line-height:.9; font-weight:700; }
+
+  /* 刊物栏目名：等宽字距 + 下划线（替代胶囊徽标） */
+  .hero-badge {
+    display:inline-block;
+    font-family:var(--mono); font-size:10.5px; font-weight:600;
+    letter-spacing:.24em; text-transform:uppercase;
+    color:var(--fg-3);
+    border-bottom:1px solid var(--line-2);
+    padding-bottom:7px; margin-bottom:28px;
+  }
+  .hero h1 { font-size: clamp(46px, 6.6vw, 78px); letter-spacing:-.04em; line-height:1.02; }
+  /* 导语：宽屏用双栏铺满容器，避免右侧留白 */
+  .hero .sub {
+    font-size: clamp(17px,1.7vw,21px); color:var(--fg-2);
+    margin-top:22px;
+  }
+  @media (min-width: 1180px) {
+    .hero .sub { column-count: 1; max-width: 760px; }
+    .hero .sub > * { break-inside: avoid; }
+  }
+  @media (max-width: 1179px) { .hero .sub { max-width: 58ch; } }
+
+  .cta { display:flex; gap:10px; flex-wrap:wrap; margin-top:36px; }
+
+  /* 实时频谱微动：克制。发丝线、降饱和蓝，无阴影 */
+  .hero-spectrum {
+    position:relative; margin-top:30px;
+    border-top:1px solid var(--line); border-bottom:1px solid var(--line);
+    padding:18px 0 14px;
+  }
+  .hero-spectrum canvas { display:block; width:100%; height:clamp(96px,7.5vw,128px); }
+  .hero-mic {
+    position:absolute; top:14px; right:0;
+    font-family:var(--sans); font-size:12px; font-weight:600;
+    color:var(--fg-3); background:var(--surface);
+    border:1px solid var(--line-2); border-radius:var(--r-sm);
+    padding:6px 12px; cursor:pointer;
+    transition:color .16s, border-color .16s, background .16s;
+  }
+  .hero-mic:hover { color:var(--fg); border-color:var(--fg); }
+  .hero-mic.on { color:var(--blue); border-color:var(--blue-line); background:var(--blue-soft); }
+  .hero-note {
+    display:block; margin-top:8px;
+    font-family:var(--mono); font-size:10px; letter-spacing:.16em;
+    text-transform:uppercase; color:var(--fg-4);
+  }
+  @media (max-width:580px){
+    .hero-mic { position:static; margin-top:10px; }
+    .hero-note { display:none; }
+  }
+
+/* 写在前面：创作手记。第一人称、衬线、去 AI 腔。刻意区别于正文 */
+  .preface {
+    padding: 2px 0 2px 20px;
+    border-left: 2px solid var(--fg-4);
+    background: transparent;
+  }
+  .preface-text {
+    font-family: var(--serif);
+    font-size: 15.5px; line-height: 1.95; color: var(--fg-2);
+    margin: 0;
+  }
+  .preface-text b { color: var(--fg); font-weight: 700; }
+
+  /* 两个要点块并排：宽屏填满宽度，各自保持舒适行长 */
+  .hero-duo {
+    display: grid; gap: 26px;
+    grid-template-columns: 1fr;      /* 窄屏：单列（保持原有阅读顺序） */
+    margin-top: 32px;
+  }
+  @media (min-width: 1080px) {
+    .hero-duo { grid-template-columns: 1fr 1.25fr; align-items: start; }
+    .hero-duo > .analogy { margin-top: 2px; }
+  }
+
+  /* 进度：发丝线带（替代卡片） */
+  .progress-strip {
+    display:flex; align-items:center; gap:18px;
+    padding:18px 0; margin-top:44px;
+    border-top:1px solid var(--line); border-bottom:1px solid var(--line);
+  }
+  .progress-strip .txt {
+    font-family:var(--mono); font-size:10.5px; letter-spacing:.2em;
+    text-transform:uppercase; color:var(--fg-4); white-space:nowrap;
+  }
+  .progress-strip .track {
+    flex:1; height:2px; background:var(--line); overflow:hidden; min-width:100px;
+  }
+  .progress-strip .fill {
+    height:100%; width:0; background:var(--blue);
+    transition:width .6s cubic-bezier(.2,.9,.3,1);
+  }
+
+  /* 章节清单（替代卡片墙） */
+  .ch-list { display:flex; flex-direction:column; gap:12px; border:0; }
+  .ch-card {
+    display:grid; grid-template-columns:66px 1fr 26px;
+    align-items:center; column-gap:20px;
+    padding:24px 26px;
+    background:#fff;
+    border:1px solid var(--line);box-shadow:0 1px 2px rgba(17,17,17,.04);
+    
+    border-radius:14px;
+    text-decoration:none; color:inherit;
+    transition:border-color .18s ease, transform .18s ease;
+  }
+  .ch-card:hover { border-color:var(--line-2); transform:translateX(3px); }
+  .intro-band .hero-duo { align-items:stretch; }
+  .intro-band .analogy,
+  .intro-band .card,
+  .intro-band .preface {
+    display:block;
+    margin:0;
+    padding:28px 26px;
+    background:#fff;
+    border:1px solid var(--line);box-shadow:0 1px 2px rgba(17,17,17,.04);
+    
+    border-radius:14px;
+  }
+  .intro-band .analogy .at,
+  .intro-band .preface-text,
+  .intro-band .card p { color:#2c2c31; }
+  .intro-band .preface { margin-top:16px; }
+  .intro-band .preface-text { column-count:1; max-width:none; }
+  .ch-card .num {
+    font-family:var(--mono); font-size:15px; font-weight:700;
+    color:var(--fg-2); letter-spacing:.1em;
+  }
+  .ch-card h3 { font-size:21px; margin:0 0 8px; }
+  .ch-card p {
+    font-family:var(--sans); font-size:17px; line-height:1.75;
+    color:var(--fg); margin:0; max-width:64ch;
+  }
+  .ch-card .arrow { color:var(--fg-4); font-size:15px; text-align:right; }
+  .ch-card:hover .arrow { color:var(--blue); }
+  .ch-card.core .num { color:var(--blue); }
+  .ch-card.core h3 { color:var(--blue); }
+  .ch-card h3 .tag { margin-left:10px; }
+
+  /* 概念图 */
+  .concept { padding:30px; }
+</style>
+</head>
+<body>
+<header class="topbar" data-nav="0"></header>
+
+<main>
+  <!-- ============ HERO ============ -->
+  <section class="hero">
+    <div class="hero-inner">
+    <div class="hero-badge"><span class="dot"></span> 智慧教育与科普 · 一件写给同龄人的作品</div>
+    <h1>频谱之诗</h1>
+    <p class="sub">
+      我第一次学 FFT 的时候没太听懂。老师写下一长串公式，说"任何信号都能拆成正弦波"——
+      可一段吵闹的录音，明明只是屏幕上一条乱糟糟的曲线，怎么拆？后来才明白：问题不在公式，
+      而在于我们一直只用"时间"这一种方式在看它。这件作品，就是我当初最希望有人给我讲清楚的那堂课。
+    </p>
+
+    <!-- 实时频谱微动（默认 ambient，可点「用我的声音驱动」抓取真实数据） -->
+    <div class="hero-spectrum">
+      <canvas id="heroSpectrum"></canvas>
+      <button class="hero-mic" id="heroMic" type="button">用我的声音驱动</button>
+      <span class="hero-note" id="heroNote">频谱之诗 · 一段随时间呼吸的频谱</span>
+    </div>
+
+    <div class="cta">
+      <a class="btn primary" href="#run">向下看完整演示</a>
+    </div>
+    <nav class="run-nav" aria-label="本页演示">
+      <a href="#show">75 秒</a>
+      <a href="#split">拆开</a>
+      <a href="#cost">算多快</a>
+      <a href="#butterfly">蝶形</a>
+      <a href="#use">用在哪</a>
+    </nav>
+    </div>
+  </section>
+
+  <section class="wrap intro-band">
+<div class="hero-duo">
+    <div class="analogy">
+      <div class="ai">如果你也曾对着公式发懵</div>
+    <div class="at">
+        别急。我们不背公式，只回答一个你其实早就问过的问题：<b>一段混在一起的声音里，
+        到底藏着哪几个音？</b>带着它往下走就行——每章末尾都有一个能动手的任务，做完会亮起一枚徽章。
+      </div>
+    </div>
+
+    <div class="card hi">
+      <p class="eyebrow" style="margin-bottom:12px">整部作品只盯着一件事</p>
+      <p style="margin:0 0 14px;font-size:16px;line-height:1.95">
+        假设你录到了一段声音——一条上下起伏的曲线。现在问一个看起来很简单的问题：
+        <strong>这段声音里，到底有哪几个音？</strong>
+      </p>
+      <p class="small muted" style="margin:0">
+        光盯着那条曲线，你分不清谁是谁：几个音被搅成了一根线。接下来的四章其实是一根线索——
+        <b>先把"换个角度看"为什么管用说清</b>，<b>再比比笨办法和聪明算法差多少</b>，
+    <b>然后亲手走一遍 FFT</b>，<b>最后看看这件事在现实里到底值多少钱</b>。顺序走最顺。
+      </p>
+    </div>
+  </div>
+
+    <div class="preface" style="margin-top:34px">
+      <p class="eyebrow" style="margin-bottom:10px">写在前面</p>
+      <p class="preface-text">
+        做这件作品前，我翻过不少 FFT 的教程。它们大多很正确，也很像——先抛定义，再甩公式，
+        最后留一句"显然可得"。可我当年卡住的那个点，从来不是公式本身，而是"为什么非得这么干"。
+ 于是我换了个做法：把算法拆成能拖、能点、能听见的小步子，让每一步都先"动起来"再讲道理。
+     里面的动画和频谱条，没有一张是贴图，全是我用代码一点一点画出来的——包括你头顶那段会呼吸的频谱。
+        如果它让你对某件事少了一点"显然"、多了一点"原来如此"，那这件作品就达到了它的目的。
+      </p>
+    </div>
+
+    </section>
+
+  <section class="wrap">
+    <p class="eyebrow">原创贡献</p>
+    <h2>我们到底做了什么不一样的东西</h2>
+    <div class="grid grid-2" style="margin-top:8px">
+      <div class="card">
+        <h3>把算法拆成能拖、能点、能听见的小步子</h3>
+        <p>市面上的 FFT 教程大多"先定义、再公式、最后留一句显然可得"。我们没有另写一套理论，而是把同一个 FFT 拆成可拖动的滑块、可点击的推进按钮、可听见的频率——让每一步先动起来，再讲道理。这是面向同龄学习者的教学设计创新。</p>
+      </div>
+      <div class="card">
+        <h3>每一帧都是代码实时算出来的</h3>
+        <p>全站 24 块 Canvas，核心波形与频谱条都由代码逐点绘制；首页 75 秒剧场与头顶"会呼吸的频谱"，都是浏览器里实时计算的。</p>
+      </div>
+      <div class="card">
+        <h3>同一道题，笨办法和聪明算法并排跑</h3>
+        <p>我们用对数坐标轴把 DFT 的"点数翻倍、计算量翻四倍"与 FFT 的"点数越多省得越多"拉到同一画面，拖动滑块就能看见差距拉开。复杂度不再是一个符号，而是一件能看见的事。</p>
+      </div>
+      <div class="card">
+        <h3>零依赖、可核验的工程底座</h3>
+        <p>无 CDN、无外部字体、双击即开。内置 FFT 与"按定义逐点计算"的 DFT 交叉比对，16 点误差 3.35×10⁻¹⁴，达到双精度机器精度，保证演示结果可复算、可核验。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="wrap">
+    <div class="progress-strip">
+      <span class="txt">探索进度</span>
+      <div class="track"><div class="fill"></div></div>
+      <span class="txt num-glow qp-num">0 / 14</span>
+    </div>
+
+    <!-- 概念图 -->
+    <div class="stage concept" style="margin-top:38px">
+      <div class="scanline"></div>
+      <div class="svg-scroll">
+      <svg viewBox="0 0 900 220" role="img" aria-label="时域到频域的转换示意">
+        <defs>
+          <marker id="arw" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
+            <path d="M0 0 L7 3 L0 6 z" fill="#1B3F8F"/>
+          </marker>
+        </defs>
+
+        <text x="30" y="26" font-size="12" font-weight="700" fill="#7C7C86" letter-spacing="0.08em">时域 · 波形</text>
+        <path d="M30 120 C60 55 90 185 120 120 C150 55 180 185 210 120 C240 55 270 185 300 120 C330 55 360 185 390 120"
+              fill="none" stroke="#16161A" stroke-width="2.6" stroke-linecap="round"/>
+        <line x1="24" y1="120" x2="400" y2="120" stroke="rgba(22,22,26,.15)" stroke-width="1.2"/>
+        <text x="24" y="152" font-size="12" fill="#7C7C86">时间 →</text>
+
+        <path d="M430 110 L502 110" stroke="#1B3F8F" stroke-width="2.6" marker-end="url(#arw)"/>
+        <text x="436" y="96" font-size="13" font-weight="700" fill="#1B3F8F" font-family="JetBrains Mono, monospace">FFT</text>
+
+        <text x="540" y="26" font-size="12" font-weight="700" fill="#7C7C86" letter-spacing="0.08em">频域 · 频谱</text>
+        <g fill="#B9C7E4">
+          <rect x="550" y="150" width="26" height="30" rx="3"/>
+          <rect x="650" y="172" width="26" height="8"  rx="3"/>
+          <rect x="700" y="128" width="26" height="52" rx="3"/>
+          <rect x="750" y="174" width="26" height="6"  rx="3"/>
+          <rect x="800" y="158" width="26" height="22" rx="3"/>
+        </g>
+        <rect x="600" y="92" width="26" height="88" rx="3" fill="#1B3F8F"/>
+        <line x1="540" y1="180" x2="840" y2="180" stroke="rgba(22,22,26,.15)" stroke-width="1.2"/>
+        <text x="540" y="202" font-size="12" fill="#7C7C86">频率 →</text>
+        <text x="606" y="82" font-size="11.5" fill="#1B3F8F" font-weight="700">主频</text>
+        <text x="700" y="196" font-size="11" fill="#7C7C86">谐波</text>
+      </svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 频谱剧场 ============ -->
+  <section class="wrap" id="show">
+    <p class="eyebrow">成片展示 · 约 75 秒</p>
+    <h2>先看一遍，再动手</h2>
+    <p class="lede">
+      这不是一段说明文字。按下播放，六幕画面按时间轴推进：
+      混在一起的曲线、拆开的纯音、频域里的三根柱子、DFT 与 FFT 的计算量，
+      以及这件事出现在播放器、耳机和设备体检里的方式。
+      画面由本站的傅里叶变换实时计算，可以暂停，也可以直接跳到某一幕。
+    </p>
+
+    <div class="show">
+      <div class="show-stage">
+        <canvas id="showStage" role="img" aria-label="频谱剧场的当前画面"></canvas>
+        <div class="show-caption">
+          <span class="show-act" id="showAct">01  一条看不懂的曲线</span>
+          <p id="showLine">一段录音落到屏幕上，只剩上下起伏。几个音已经混成一根线。</p>
+        </div>
+      </div>
+
+      <div class="show-controls">
+        <button class="btn primary" id="showPlay" type="button">播放</button>
+        <button class="btn" id="showSound" type="button" aria-pressed="false">配乐关</button>
+        <span class="show-clock"><b id="showTime">00:00</b> / <span id="showDur">01:15</span></span>
+        <input id="showSeek" type="range" min="0" max="1000" value="0" aria-label="剧场进度">
+      </div>
+      <p class="sr-only" id="showStatus" role="status" aria-live="polite"></p>
+
+      <div class="show-chapters">
+        <button class="show-chapter on" type="button" data-t="0"><b>01</b>看不懂的曲线</button>
+        <button class="show-chapter" type="button" data-t="12"><b>02</b>先把它拆开</button>
+        <button class="show-chapter" type="button" data-t="26"><b>03</b>换个角度看</button>
+        <button class="show-chapter" type="button" data-t="40"><b>04</b>笨办法太慢</button>
+        <button class="show-chapter" type="button" data-t="52"><b>05</b>分治再分治</button>
+        <button class="show-chapter" type="button" data-t="64"><b>06</b>它在你身边</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 同一页演示 ============ -->
+  <section class="wrap" id="run">
+    <p class="eyebrow">01 · 就在这一页</p>
+    <h2 id="split">拖一下，看见它被拆开</h2>
+    <div class="full-stage"><canvas id="runSplit"></canvas></div>
+    <div class="stage-copy">
+      <p>左边是混在一起的声音，右边是它的三个频率。拖动时两边同时变化，不需要进入另一章。</p>
+      <label>成分强度 <b id="runMixLabel">60%</b>
+        <input id="runMix" type="range" min="0" max="100" value="60">
+      </label>
+    </div>
+  </section>
+
+  <section class="wrap">
+    <p class="eyebrow">02 · 为什么要 FFT</p>
+    <h2 id="cost">点数一多，差距就拉开了</h2>
+    <div class="full-stage"><canvas id="runCost"></canvas></div>
+    <div class="stage-copy">
+      <p>蓝条是旧办法，白条是 FFT。把下面的滑块往右拖，声音变长，蓝条会一下子冲出去。</p>
+      <div><div class="metric" id="runRatio">—</div><span class="small muted">这一档，FFT 快几倍</span></div>
+    </div>
+    <input id="runN" type="range" min="4" max="12" value="8" aria-label="一段声音有多少个点">
+  </section>
+
+  <section class="wrap">
+    <p class="eyebrow">03 · 算法本身</p>
+    <h2 id="butterfly">8 个点，三级蝶形</h2>
+    <div class="full-stage"><canvas id="runButterfly"></canvas></div>
+    <div class="stage-copy">
+      <p id="runStepText">第 1 级：相邻两点合并。</p>
+      <button class="btn primary" id="runStep" type="button">下一级</button>
+    </div>
+  </section>
+
+  <section class="wrap">
+    <p class="eyebrow">04 · 为什么值得做</p>
+    <h2 id="use">它不是试卷上的公式</h2>
+    <div class="grid grid-3">
+      <article class="card"><h3>播放器</h3><p>频谱条每一帧都在做一次 FFT。</p></article>
+      <article class="card"><h3>降噪耳机</h3><p>找到噪声频率，再发出反相声波抵消它。</p></article>
+      <article class="card"><h3>设备体检</h3><p>异常频率比肉眼看波形更早暴露故障。</p></article>
+    </div>
+  </section>
+
+  <!-- ============ 五章 ============ -->
+  <section class="wrap chap-head">
+    <p class="eyebrow">课程结构</p>
+    <h2>五章，从直觉到算法</h2>
+    <p class="lede">每一章都有一个可以动手玩的任务。</p>
+
+    <div class="ch-list" style="margin-top:30px">
+      <a class="ch-card" href="chapter1.html">
+        <div class="num">01</div>
+        <div>
+          <h3>时域与频域<span class="tag">可玩</span></h3>
+          <p>先讲清傅里叶变换是什么、为什么需要它，再动手找出神秘信号的频率。</p>
+        </div>
+        <span class="arrow">→</span>
+      </a>
+      <a class="ch-card" href="chapter2.html">
+        <div class="num">02</div>
+        <div>
+          <h3>从 DFT 到 FFT<span class="tag">对比</span></h3>
+          <p>拖大 N，看两条曲线如何拉开几个数量级的差距。</p>
+        </div>
+        <span class="arrow">→</span>
+      </a>
+      <a class="ch-card core" href="chapter3.html">
+        <div class="num">03</div>
+        <div>
+          <h3>蝶形舞台<span class="tag violet">核心</span></h3>
+          <p>8 点 FFT 逐级展开，拖信号、点推进，看频谱被一步步算出来。</p>
+        </div>
+        <span class="arrow">→</span>
+      </a>
+      <a class="ch-card" href="chapter4.html">
+        <div class="num">04</div>
+        <div>
+          <h3>频谱之用<span class="tag">实战</span></h3>
+          <p>给电机做一次"体检"，用频谱诊断出机械故障。</p>
+        </div>
+        <span class="arrow">→</span>
+      </a>
+      <a class="ch-card" href="chapter5.html">
+        <div class="num">05</div>
+        <div>
+          <h3>自测与创作说明<span class="tag amber">检验</span></h3>
+          <p>7 道互动题检验理解，并附完整创作说明与技术路线。</p>
+        </div>
+        <span class="arrow">→</span>
+      </a>
+      <a class="ch-card" href="all-in-one.html">
+        <div class="num">全</div>
+        <div>
+          <h3>整合总览</h3>
+          <p>一页看完全部 5 章，适合快速浏览或演示。</p>
+        </div>
+        <span class="arrow">→</span>
+      </a>
+      <a class="ch-card" href="note-lab.html">
+        <div class="num">延</div>
+        <div>
+          <h3>音高实验室<span class="tag">延伸</span></h3>
+          <p>把「频率」翻译成「音高」：弹琴键、看实时频谱、玩「听音辨频」，还能上传浏览器可解码的音频跑一次真实 FFT——并认识把这件事做成产品的落谱。</p>
+        </div>
+        <span class="arrow">→</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- ============ 算法的代价 ============ -->
+  <section class="wrap chap-head">
+    <p class="eyebrow">为什么要换算法</p>
+    <h2>声音一长，旧算法就慢到不能用</h2>
+    <p class="lede">
+      旧办法叫 DFT：一段声音有多少个采样点，就要把每个点和每个频率都乘一遍。
+      点的数量翻一倍，计算量大约翻四倍。
+      FFT 还是算出同一张频谱，只是把重复的乘法省掉了。点越多，省得越多。
+    </p>
+
+    <table class="data" style="margin-top:30px">
+      <thead>
+        <tr>
+          <th>一段声音有多少个点</th>
+          <th>旧办法要算几次</th>
+          <th>FFT 要算几次</th>
+          <th>FFT 快几倍</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>64</td><td>4,096</td><td>192</td><td>21×</td></tr>
+        <tr><td>256</td><td>65,536</td><td>1,024</td><td>64×</td></tr>
+        <tr><td>1024</td><td>1,048,576</td><td>5,120</td><td>205×</td></tr>
+        <tr><td>4096</td><td>16,777,216</td><td>24,576</td><td>683×</td></tr>
+      </tbody>
+    </table>
+    <p class="small muted prose-flow" style="margin-top:14px">
+      点数从 64 加到 4096，旧办法从四千次涨到一千六百多万次，FFT 只涨到两万多次。
+      所以手机播放器才能每一帧都画出频谱。上面的数字可以按「点数 × 点数」直接复算。
+    </p>
+  </section>
+
+  <!-- ============ 作品规格 ============ -->
+  <section class="wrap chap-head">
+    <p class="eyebrow">作品规格</p>
+    <h2>实现与验证</h2>
+
+    <table class="spec">
+      <tbody>
+        <tr>
+          <td>章节</td>
+          <td>5 章 + 1 个延伸实验（音高实验室），共 14 个可动手的互动任务</td>
+        </tr>
+        <tr>
+          <td>图形</td>
+          <td>24 块 Canvas 实时画布，核心波形与频谱均由代码逐点绘制</td>
+        </tr>
+        <tr>
+          <td>运行</td>
+          <td>双击 <span class="mono">index.html</span> 即可，无需安装、无需联网</td>
+        </tr>
+        <tr>
+          <td>依赖</td>
+          <td>零 —— 无 CDN、无外部字体、无任何接口调用</td>
+        </tr>
+        <tr>
+          <td>体积</td>
+          <td>约 317 KB（8 个页面 + 样式与脚本，不含说明文档）</td>
+        </tr>
+        <tr>
+          <td>适用</td>
+          <td>桌面端与移动端浏览器</td>
+        </tr>
+        <tr>
+          <td>验证</td>
+          <td>内置 FFT 实现与"按定义逐点计算"的 DFT 交叉比对，16 点输入下复数值最大误差
+            <span class="mono">3.35 × 10⁻¹⁴</span>，已达双精度浮点的机器精度量级</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="wrap pager">
+    <a href="all-in-one.html"><span class="dir">← 总览</span><span class="ttl">一页看全</span></a>
+    <a class="next" href="chapter1.html"><span class="dir">开始探索 →</span><span class="ttl">第 1 章 · 时域与频域</span></a>
+  </div>
+</main>
+
+<footer class="site-footer"></footer>
+<script src="assets/js/site.js"></script>
+<script src="assets/js/hero.js"></script>
+<script src="assets/js/show.js"></script>
+<script src="assets/js/run.js"></script>
+<script>
+(function () {
+  function sync() {
+    var o = {};
+    try { o = JSON.parse(localStorage.getItem('spectrum_poem_quests_v3') || '{}'); } catch (e) {}
+    var total = window.Site.TASKS.length, done = 0;
+    window.Site.TASKS.forEach(function (id) { if (o[id]) done++; });
+    var f = document.querySelector('.progress-strip .fill');
+    if (f) f.style.width = (done / total * 100) + '%';
+    var n = document.querySelector('.qp-num');
+    if (n) n.textContent = done + ' / ' + total;
+  }
+  sync();
+  setInterval(sync, 1200);
+})();
+</script>
+</body>
+</html>

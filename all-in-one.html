@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>频谱之诗 · 作品总览（整合视图）</title>
+<!-- __sp_head -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='3' fill='%2316161A'/%3E%3Cpath d='M3.5 17.5C6.2 17.5 6.2 7.5 9 7.5s2.8 10 5.5 10 2.8-10 5.5-10' stroke='%23FBFAF7' stroke-width='2.1' fill='none' stroke-linecap='round'/%3E%3Ccircle cx='20' cy='7.5' r='2.3' fill='%239A6212'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#FFFFFF">
+<meta name="description" content="《频谱之诗》整合总览：一页看完五章全部内容与交互实验，附创作说明、技术原理与使用说明。">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:title" content="频谱之诗 · 作品总览（整合视图）">
+<meta property="og:description" content="《频谱之诗》整合总览：一页看完五章全部内容与交互实验，附创作说明、技术原理与使用说明。">
+<meta name="twitter:card" content="summary">
+<link rel="stylesheet" href="assets/css/main.css?v=1791815400">
+<style>
+  /* ===== 整合页专属布局 ===== */
+  body { background: var(--bg); }
+
+  .ov-top {
+    position: sticky; top: 0; z-index: 60;
+    background: var(--bg);
+    border-bottom: 1px solid var(--line);
+  }
+  .ov-top .topbar-inner { height: 58px; max-width: 1260px; }
+  .ov-top .nav a.on {
+    color: var(--fg); font-weight: 700;
+    border-bottom-color: var(--fg);
+  }
+
+  .ov-shell {
+    max-width: 1260px; margin: 0 auto;
+    display: grid; grid-template-columns: 214px 1fr;
+    gap: 28px; padding: 28px 24px 90px;
+    align-items: start;
+    position: relative; z-index: 2;
+  }
+
+  /* 左侧目录 */
+  .ov-side {
+    position: sticky; top: 84px;
+    background: transparent;
+    border-top: 1px solid var(--line);
+    padding: 18px 0 0;
+  }
+  .ov-side h4 {
+    font-family: var(--mono);
+    font-size: 10px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--fg-4); margin: 4px 0 12px; font-weight: 600;
+  }
+  .ov-side a {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 0;
+    font-family: var(--sans); font-size: 13.5px;
+    color: var(--fg-3); text-decoration: none;
+    border-bottom: 1px solid var(--line);
+    transition: color .14s;
+  }
+  .ov-side a:hover { color: var(--fg); }
+  .ov-side a.active { color: var(--fg); font-weight: 700; }
+  .ov-side a .num {
+    width: 16px; flex: none;
+    color: var(--fg-4); font-family: var(--mono); font-size: 10.5px;
+  }
+  .ov-side a.active .num { color: var(--blue); }
+  .ov-side .sep { display: none; }
+  .ov-side .qp { margin: 20px 0 4px; }
+  .ov-side .qp .lbl {
+    font-family: var(--mono);
+    font-size: 10px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--fg-4); margin-bottom: 8px;
+  }
+  .ov-side .qp-track {
+    height: 2px; background: var(--line); overflow: hidden;
+  }
+  .ov-side .qp-fill {
+    height: 100%; width: 0; background: var(--blue);
+    transition: width .5s cubic-bezier(.2,.9,.3,1);
+  }
+  .ov-side .qp .n { margin-top: 8px; }
+
+  /* 概述 */
+  .ov-intro {
+    background: transparent;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    padding: 34px 0 30px; margin-bottom: 30px;
+  }
+  .ov-intro h1 { font-size: clamp(28px, 3.6vw, 44px); }
+
+  .ov-stats {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;
+    margin-top: 26px; padding-top: 24px; border-top: 1px solid var(--line);
+  }
+  .ov-stats .v {
+    font-family: var(--mono); font-size: 21px; font-weight: 700;
+    color: var(--fg);
+  }
+  .ov-stats .k {
+    font-family: var(--sans); font-size: 12px; color: var(--fg-3); margin-top: 5px;
+  }
+
+  /* 章节区块 */
+  .ov-sec {
+    background: transparent;
+    border-top: 1px solid var(--line-2);
+    margin-bottom: 34px;
+    scroll-margin-top: 80px;
+  }
+  .ov-sec.core { border-top-color: var(--blue); }
+  .ov-sec-head {
+    display: flex; align-items: center; gap: 14px;
+    padding: 16px 0;
+  }
+  .ov-sec-head .badge {
+    font-family: var(--mono); font-size: 12px; font-weight: 700;
+    color: var(--fg-4); flex: none; width: 22px;
+  }
+  .ov-sec.core .badge { color: var(--blue); }
+  .ov-sec-head h3 { font-family: var(--serif); font-size: 18px; margin: 0; }
+  .ov-sec-head .sub {
+    font-family: var(--sans); font-size: 12.5px; color: var(--fg-3); margin-top: 3px;
+  }
+  .ov-sec-head .acts { margin-left: auto; display: flex; gap: 8px; }
+  .ov-sec-head .acts a {
+    font-family: var(--sans); font-size: 12px;
+    text-decoration: none; color: var(--fg-3);
+    border: 1px solid var(--line-2); padding: 5px 12px;
+    white-space: nowrap; transition: all .16s;
+  }
+  .ov-sec-head .acts a:hover { border-color: var(--fg); color: var(--fg); }
+  .ov-frame-wrap { position: relative; background: var(--bg-2); border: 1px solid var(--line); }
+  .ov-frame-wrap iframe { display: block; width: 100%; border: 0; background: var(--bg-2); }
+  .ov-loading {
+    padding: 44px; text-align: center; color: var(--fg-3);
+    font-family: var(--sans); font-size: 13.5px;
+  }
+
+  /* 文档 */
+  .ov-docs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; }
+  .ov-docs a {
+    display: block; text-decoration: none; color: inherit;
+    border-top: 1px solid var(--line);
+    padding: 18px 22px 18px 0;
+    transition: color .16s;
+  }
+  .ov-docs a:hover { color: var(--blue); }
+  .ov-docs h4 { font-family: var(--sans); font-size: 14px; margin: 0 0 7px; }
+  .ov-docs p { font-family: var(--sans); font-size: 12.5px; color: var(--fg-3); margin: 0; line-height: 1.7; }
+
+  @media (max-width: 940px) {
+    .ov-shell { grid-template-columns: 1fr; padding: 18px 14px 70px; }
+    .ov-side { position: static; }
+    .ov-side a { display: inline-flex; margin: 2px; }
+    .ov-stats { grid-template-columns: repeat(2, 1fr); }
+    .ov-docs { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar ov-top" data-static>
+  <div class="topbar-inner">
+    <a class="brand" href="index.html">
+      <svg class="mark" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M2 18 C5 18 5 6 8 6 C11 6 11 18 14 18 C17 18 17 6 20 6"
+              stroke="#1B3F8F" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+        <circle cx="20" cy="6" r="2.6" fill="#9A6212"/>
+      </svg>
+      <span>频谱之诗</span>
+    </a>
+    <nav class="nav">
+      <a href="index.html">独立首页</a>
+      <a href="all-in-one.html" class="on">整合总览</a>
+    </nav>
+  </div>
+</header>
+
+<div class="ov-shell">
+
+  <aside class="ov-side">
+    <h4>作品目录</h4>
+    <a href="#sec0" class="active"><span class="num">·</span> 作品概述</a>
+    <a href="#sec1"><span class="num">1</span> 时域与频域</a>
+    <a href="#sec2"><span class="num">2</span> 从 DFT 到 FFT</a>
+    <a href="#sec3"><span class="num">3</span> 蝶形舞台</a>
+    <a href="#sec4"><span class="num">4</span> 频谱之用</a>
+    <a href="#sec5"><span class="num">5</span> 自测与说明</a>
+    <a href="note-lab.html" target="_blank"><span class="num">延</span> 音高实验室</a>
+    <div class="sep"></div>
+    <h4>说明文档</h4>
+    <a href="docs/创作说明.md"><span class="num">·</span> 创作说明</a>
+    <a href="docs/技术原理.md"><span class="num">·</span> 技术原理</a>
+    <a href="docs/README.md"><span class="num">·</span> 使用说明</a>
+
+    <div class="qp">
+      <div class="lbl">任务进度</div>
+      <div class="qp-track"><div class="qp-fill"></div></div>
+      <div class="n num-glow quest-progress">0 / 14</div>
+    </div>
+  </aside>
+
+  <main class="ov-main">
+
+    <section class="ov-intro" id="sec0">
+      <p class="eyebrow">自主选题 · 智慧教育与科普创作</p>
+      <h1>频谱之诗</h1>
+      <p class="lede">
+        一个关于 <strong>FFT（快速傅里叶变换）</strong> 的交互式科普网站。
+        把这条通常只出现在信号处理教材里的公式，拆成五章与 1 个延伸实验、共 14 个可动手的互动任务，
+        让没有数学背景的观众也能亲手"看见"频谱是怎么被算出来的。
+      </p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:22px">
+        <span class="tag">交互式科普</span>
+        <span class="tag violet">纯前端 · 零依赖</span>
+        <span class="tag amber">5 章 · 14 个任务</span>
+        <span class="tag green">离线可运行</span>
+      </div>
+      <div class="ov-stats">
+        <div><div class="v">约 317 KB</div><div class="k">核心页面与脚本体积</div></div>
+        <div><div class="v">0</div><div class="k">外部依赖</div></div>
+        <div><div class="v">3.35e-14</div><div class="k">FFT 最大误差</div></div>
+        <div><div class="v">14</div><div class="k">互动任务</div></div>
+      </div>
+    </section>
+
+    <div id="chapters"></div>
+
+    <section class="ov-sec" id="sec6">
+      <div class="ov-sec-head">
+        <div class="badge">文</div>
+        <div>
+          <h3>说明文档</h3>
+          <div class="sub">创作说明 / 技术原理 / 使用说明</div>
+        </div>
+      </div>
+      <div style="padding:22px 24px">
+        <div class="ov-docs">
+          <a href="docs/创作说明.md">
+            <h4>创作说明</h4>
+            <p>选题背景、章节结构、技术路线、算法验证数据、工具使用声明</p>
+          </a>
+          <a href="docs/技术原理.md">
+            <h4>技术原理</h4>
+            <p>DFT 定义、旋转因子、基-2 时域抽取推导、复杂度对比、位反转</p>
+          </a>
+          <a href="docs/README.md">
+            <h4>使用说明</h4>
+            <p>运行方式、推荐观看顺序、各章交互操作指南、兼容性</p>
+          </a>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<footer class="site-footer" style="background:transparent"></footer>
+
+<script src="assets/js/site.js"></script>
+<script>
+(function () {
+  var CH = [
+    { n: 1, id: 'sec1', file: 'chapter1.html', title: '时域与频域',
+      sub: '找出神秘信号的频率' },
+    { n: 2, id: 'sec2', file: 'chapter2.html', title: '从 DFT 到 FFT',
+      sub: '一次"分治"带来的数量级提速' },
+    { n: 3, id: 'sec3', file: 'chapter3.html', title: '蝶形舞台',
+      sub: '核心交互 · 看着频谱被"算"出来', core: true },
+    { n: 4, id: 'sec4', file: 'chapter4.html', title: '频谱之用',
+      sub: '诊断故障电机' },
+    { n: 5, id: 'sec5', file: 'chapter5.html', title: '自测与创作说明',
+      sub: '7 道互动题 + 作品说明' }
+  ];
+
+  var host = document.getElementById('chapters');
+  var html = '';
+  CH.forEach(function (c) {
+    html += '<section class="ov-sec' + (c.core ? ' core' : '') + '" id="' + c.id + '">' +
+      '<div class="ov-sec-head">' +
+        '<div class="badge">' + c.n + '</div>' +
+        '<div><h3>' + c.title + '</h3><div class="sub">' + c.sub + '</div></div>' +
+        '<div class="acts"><a href="' + c.file + '" target="_blank">单独打开 </a></div>' +
+      '</div>' +
+      '<div class="ov-frame-wrap">' +
+        '<div class="ov-loading" id="ld' + c.n + '">正在载入第 ' + c.n + ' 章…</div>' +
+        '<iframe src="' + c.file + '" title="第 ' + c.n + ' 章 ' + c.title + '" ' +
+          'scrolling="no" style="height:600px"></iframe>' +
+      '</div></section>';
+  });
+  host.innerHTML = html;
+
+  function injectEmbedStyle(doc) {
+    if (doc.getElementById('__embed_style')) return;
+    var st = doc.createElement('style');
+    st.id = '__embed_style';
+    st.textContent =
+      '.topbar{display:none!important}' +
+      '.site-footer{display:none!important}' +
+      'section:first-of-type{padding-top:36px!important}' +
+      '.pager{display:none!important}' +
+      'body::before,body::after{display:none!important}' +
+      /* 嵌入视图宽度充足，取消 svg 的 min-width 与滑动提示，避免出现横滑条 */
+      '.svg-scroll{overflow-x:visible!important}' +
+      '.svg-scroll>svg{min-width:0!important}' +
+      '.svg-scroll::after{display:none!important}';
+    (doc.head || doc.documentElement).appendChild(st);
+  }
+
+  function measure(doc) {
+    var de = doc.documentElement, b = doc.body;
+    var cands = [
+      de ? de.scrollHeight : 0, de ? de.offsetHeight : 0,
+      b ? b.scrollHeight : 0, b ? b.offsetHeight : 0
+    ];
+    var sum = 0;
+    doc.querySelectorAll('section').forEach(function (s) {
+      var r = s.getBoundingClientRect();
+      if (r.height > 0) sum += r.height;
+    });
+    cands.push(sum + 130);
+    return Math.max.apply(null, cands);
+  }
+
+  var frames = host.querySelectorAll('iframe');
+
+  frames.forEach(function (f, i) {
+    var last = -1, stable = 0, rounds = 0;
+    function tick() {
+      rounds++;
+      var h = 0;
+      try {
+        var doc = f.contentDocument || f.contentWindow.document;
+        if (doc && doc.body) { injectEmbedStyle(doc); h = measure(doc); }
+      } catch (e) { /* 忽略 */ }
+
+      if (h > 300) {
+        f.style.height = h + 'px';
+        var ld = document.getElementById('ld' + CH[i].n);
+        if (ld) ld.style.display = 'none';
+        if (Math.abs(h - last) < 2) {
+          stable++;
+          if (stable >= 3) return;
+        } else { stable = 0; }
+        last = h;
+      }
+      if (rounds < 50) requestAnimationFrame(tick);
+    }
+    if (f.contentDocument && f.contentDocument.readyState === 'complete') {
+      requestAnimationFrame(tick);
+    }
+    f.addEventListener('load', function () { requestAnimationFrame(tick); });
+  });
+
+  /* 目录高亮 */
+  var links = document.querySelectorAll('.ov-side a');
+  var targets = [];
+  links.forEach(function (a) {
+    var href = a.getAttribute('href');
+    if (href && href.charAt(0) === '#') {
+      var el = document.querySelector(href);
+      if (el) targets.push({ a: a, el: el });
+    }
+  });
+  function syncNav() {
+    var y = window.scrollY + 130;
+    var cur = targets[0];
+    targets.forEach(function (t) { if (t.el.offsetTop <= y) cur = t; });
+    links.forEach(function (a) { a.classList.remove('active'); });
+    if (cur) cur.a.classList.add('active');
+  }
+  window.addEventListener('scroll', syncNav, { passive: true });
+  syncNav();
+
+  /* 任务进度条 */
+  function syncProgress() {
+    var o = {};
+    try { o = JSON.parse(localStorage.getItem('spectrum_poem_quests_v3') || '{}'); } catch (e) {}
+    var total = window.Site.TASKS.length, done = 0;
+    window.Site.TASKS.forEach(function (id) { if (o[id]) done++; });
+    var fill = document.querySelector('.qp-fill');
+    if (fill) fill.style.width = (done / total * 100) + '%';
+    var n = document.querySelector('.quest-progress');
+    if (n) n.textContent = done + ' / ' + total;
+  }
+  syncProgress();
+  setInterval(syncProgress, 1200);
+})();
+</script>
+</body>
+</html>

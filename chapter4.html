@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第 4 章 · 频谱之用 — 频谱之诗</title>
+<!-- __sp_head -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='3' fill='%2316161A'/%3E%3Cpath d='M3.5 17.5C6.2 17.5 6.2 7.5 9 7.5s2.8 10 5.5 10 2.8-10 5.5-10' stroke='%23FBFAF7' stroke-width='2.1' fill='none' stroke-linecap='round'/%3E%3Ccircle cx='20' cy='7.5' r='2.3' fill='%239A6212'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#FFFFFF">
+<meta name="description" content="同一套算法完成三件事：音频谐波分析、电机转子故障诊断、JPEG 图像压缩取舍。">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:title" content="第 4 章 · 频谱之用 — 频谱之诗">
+<meta property="og:description" content="同一套算法完成三件事：音频谐波分析、电机转子故障诊断、JPEG 图像压缩取舍。">
+<meta name="twitter:card" content="summary">
+<link rel="stylesheet" href="assets/css/main.css?v=1791815400">
+</head>
+<body>
+<header class="topbar" data-nav="4"></header>
+
+<main>
+  <section class="wrap chap-head">
+    <p class="eyebrow">第 4 章</p>
+    <h2>频谱之用：三个看得见的场景</h2>
+    <p class="lede">
+      FFT 不是考试里的公式，它藏在你每天用的东西里。
+      这一章看三个最直观的场景——它们用的是同一套算法。
+    </p>
+  </section>
+
+  <!-- ===== 场景 1：音频 ===== -->
+  <section class="wrap">
+    <p class="eyebrow">场景 1 · 声音</p>
+    <h3>为什么音乐播放器会跳动的"频谱条"？</h3>
+
+    <div class="analogy">
+      <div class="ai">打个比方</div>
+      <div class="at">
+        你有没有想过：<b>为什么同一个音，吉他和钢琴听起来不一样？</b>
+        它们弹的可能是同一个音高（频率相同），但<b>"配菜"不同</b>——
+        吉他会在主频率之外带出一堆高频泛音，钢琴带出的是另一批。
+        频谱条干的事，就是把这个"配方"实时画出来：
+        <b>横轴是频率，柱子高度是能量</b>。矮柱换一批，音色就变了。
+      </div>
+    </div>
+
+    <p class="muted small prose-flow">
+      原理上：你听到的声音是一段随时间变化的压强波。播放器每隔几十毫秒对它做一次 FFT，
+      把结果按低频到高频排成柱子——就得到了那排会跳的频谱条。
+      下面拖动滑块，模拟"不同音高"在频谱上的位置。
+    </p>
+
+    <div class="ask" style="margin-top:16px">
+      <p class="qt"><span class="ql">补个概念</span>先补一个词："谐波"是什么？</p>
+      <p class="qd">
+        第 1 章说过：<b>任何信号都能写成一堆正弦波相加</b>。当这些正弦波的频率
+        <b>正好是某个最低频率的 1 倍、2 倍、3 倍……</b>时，专业上就把它们叫
+        <b>"基频"和它的"谐波"</b>。<br>
+        · <b>基频 f₀</b>：最低的那个，决定你听到的"音高"；<br>
+        · <b>2 次谐波 2f₀、3 次谐波 3f₀</b>……：往上叠的"配菜"，决定"音色"。<br>
+        <b>所以判断"n 次谐波是多少 Hz"，就是拿基频乘 n</b>——就这么简单。
+        这个规则在下一节的电机故障诊断里还会再用一次。
+      </p>
+    </div>
+
+    <div class="ask" style="margin-top:16px">
+      <p class="qt"><span class="ql">先猜一猜</span>拖之前先猜一件事</p>
+      <p class="qd">
+        把基频从 220 Hz 调到 440 Hz（音乐里的"高八度"），
+        频谱上的那些柱子会怎么动？是<b>只有第一根变高</b>，
+        还是<b>所有柱子整体挪位置</b>？先猜，再拖滑块验证。
+      </p>
+    </div>
+
+    <div class="stage" style="margin-top:24px">
+      <canvas id="cvAudio"></canvas>
+      <div style="margin-top:18px">
+        <label class="field">基频音高：<span class="mono num-glow" id="lPitch">220 Hz（A3）</span></label>
+        <input type="range" id="pitch" min="1" max="7" value="3" step="1">
+      </div>
+      <p class="small muted" style="margin:12px 0 0">
+        观察：改变音高，<strong>所有谐波峰整体平移</strong>。
+        频率翻倍（220 → 440 Hz）对应音乐里的"高八度"——
+        这就是为什么频谱能精确描述音高。
+      </p>
+    </div>
+
+    <div class="grid grid-3" style="margin-top:20px">
+      <div class="card">
+        <h4>基频 f₀</h4>
+        <p class="small muted" style="margin:6px 0 0">决定音高，是频谱里最左、最强的那根。</p>
+      </div>
+      <div class="card">
+        <h4>谐波 2f₀, 3f₀ …</h4>
+        <p class="small muted" style="margin:6px 0 0">决定音色。同样的音高，不同乐器谐波分布不同。</p>
+      </div>
+      <div class="card">
+        <h4>FFT 分帧</h4>
+        <p class="small muted" style="margin:6px 0 0">播放器每秒做几十次 FFT，才能让柱子"跟得上"音乐。</p>
+      </div>
+    </div>
+
+    <div class="quest" data-quest="ch4b" style="margin-top:22px">
+      <div class="q-ico">?</div>
+      <div class="q-txt">
+        任务：钢琴的中央 A 基频是 <b>440 Hz</b>。它的 3 次谐波是多少 Hz？
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+          <button class="btn" data-harm="0">440 Hz</button>
+          <button class="btn" data-harm="0">880 Hz</button>
+          <button class="btn" data-harm="1">1320 Hz</button>
+          <button class="btn" data-harm="0">1760 Hz</button>
+        </div>
+      </div>
+      <div class="q-state">未完成</div>
+    </div>
+  </section>
+
+  <!-- ===== 场景 2：机械振动 ===== -->
+  <section class="wrap">
+    <p class="eyebrow">场景 2 · 机械</p>
+    <h3>一台电机的"体检报告"</h3>
+
+    <div class="analogy">
+      <div class="ai">打个比方</div>
+      <div class="at">
+        医生听诊时，能从心音里"听出"杂音——经验来自长期训练。
+        工程师判断电机故障，用的是类似的思路，但更精确：
+        <b>电机每转一圈，本身就会"哼"一个固定频率的音（转频）</b>。
+        如果内部有零件松动、不平衡，它会在转频的<b>整数倍位置</b>额外"哼"出声。
+        频谱就是把这些"哼声"分门别类地列出来——哪个位置高，就对应哪一类毛病。
+      </div>
+    </div>
+
+    <p class="muted small prose-flow">
+      原理上：旋转机械的振动信号里，每个异常都会在特定频率上留下痕迹。
+      工程师用 FFT 把振动波形拆成频谱，再对照转速的倍数去判断问题出在哪。
+    </p>
+
+    <div class="ask" style="margin-top:16px">
+      <p class="qt"><span class="ql">怎么玩</span>先建立"基准"再动手</p>
+      <p class="qd">
+        一台 1500 r/min 的电机，转频 = 1500 ÷ 60 = <span class="mono">25 Hz</span>。
+        那么它的"1× 位置"就是 25 Hz，"2× 位置"是 50 Hz……<br>
+        <strong>"1× 处出现异常高柱"是最常见的故障信号</strong>（转子不平衡）。
+        记住这个基准，再去勾选下面的故障开关，你就能看懂诊断结论了。
+      </p>
+    </div>
+
+    <div class="quest" data-quest="ch4">
+      <div class="q-ico">?</div>
+      <div class="q-txt">
+        任务：注入故障后，从频谱判断出是<b>哪一类</b>机械问题。
+      </div>
+      <div class="q-state">未完成</div>
+    </div>
+
+    <div class="stage" style="margin-top:24px">
+      <div class="scanline" style="z-index:3"></div>
+      <canvas id="cvVib"></canvas>
+      <div class="grid grid-2" style="margin-top:20px;align-items:center">
+        <div>
+          <label class="field">转速：<span class="mono num-glow" id="lRpm">1500</span> r/min</label>
+          <input type="range" id="rpm" min="600" max="3000" value="1500" step="100">
+        </div>
+        <div>
+          <label class="field" style="display:flex;align-items:center;gap:9px;cursor:pointer;text-transform:none;font-size:14px;color:var(--fg)">
+            <input type="checkbox" id="fault" style="width:auto;accent-color:var(--rose);transform:scale(1.2)">
+            <span>注入"转子不平衡"故障</span>
+          </label>
+        </div>
+      </div>
+      <div id="vibDiag" style="display:none;margin-top:16px;padding:14px 18px;border-radius:10px;
+           background:var(--rose-soft);border-left:2px solid var(--rose);
+           color:#8A322B;font-size:14.5px;font-weight:600"></div>
+    </div>
+
+    <div class="card" style="margin-top:20px">
+      <h4 style="margin-bottom:10px">怎么读这张频谱</h4>
+      <table style="margin-top:4px">
+        <thead>
+          <tr><th>频率位置</th><th>通常对应</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="mono">1× 转速频率</td><td>转子不平衡、轴弯曲</td></tr>
+          <tr><td class="mono">2× 转速频率</td><td>不对中、联轴器问题</td></tr>
+          <tr><td class="mono">高频段宽带</td><td>轴承缺陷、摩擦</td></tr>
+        </tbody>
+      </table>
+      <p class="small muted" style="margin:14px 0 0">
+        拖动转速滑块：转速频率随之移动。勾选"不平衡"，
+        在 1× 位置会出现一根明显抬高的峰——这就是故障特征。
+      </p>
+    </div>
+  </section>
+
+  <!-- ===== 场景 3：图像压缩 ===== -->
+  <section class="wrap">
+    <p class="eyebrow">场景 3 · 图像</p>
+    <h3>你的照片是怎么被"压小"的？</h3>
+    <p class="muted small prose-flow">
+      JPEG 图片用的算法叫 <strong>DCT（离散余弦变换）</strong>，是 FFT 的"亲兄弟"：
+      同样把信号拆成频率成分，只不过处理的是一小块一小块的像素。
+      它的思路很直接——<strong>人眼对"低频"（大色块）敏感，对"高频"（细节纹理）迟钝，
+      所以可以放心地把高频丢掉。</strong>
+    </p>
+
+    <div class="stage" style="margin-top:24px">
+      <svg viewBox="0 0 640 230" role="img" aria-label="JPEG 压缩的高低频取舍示意">
+        <!-- 左：原图（棋盘+渐变） -->
+        <text x="20" y="22" font-size="12.5" font-weight="700" fill="#7C7C86">原始像素块</text>
+        <g>
+          <rect x="20" y="38" width="130" height="130" rx="6" fill="#E8EDF6"/>
+          <path d="M20 100 L150 100" stroke="#1B3F8F" stroke-width="2"/>
+          <path d="M85 38 L85 168" stroke="#1B3F8F" stroke-width="2"/>
+          <rect x="20" y="38" width="65" height="65" fill="#B9C7E4"/>
+          <rect x="85" y="103" width="65" height="65" fill="#B9C7E4"/>
+          <text x="85" y="188" text-anchor="middle" font-size="11.5" fill="#7C7C86">含大量边缘 = 高频多</text>
+        </g>
+
+        <!-- 箭头 -->
+        <path d="M172 103 L216 103" stroke="#7C7C86" stroke-width="2" marker-end="url(#a4)"/>
+        <defs><marker id="a4" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0 0 L6 3 L0 6 z" fill="#7C7C86"/></marker></defs>
+
+        <!-- 中：DCT 系数格 -->
+        <text x="238" y="22" font-size="12.5" font-weight="700" fill="#7C7C86">DCT 频率系数</text>
+        <g font-family="JetBrains Mono, monospace" font-size="10">
+          <rect x="238" y="38" width="130" height="130" rx="6" fill="#F9F5ED" stroke="#E0C89C"/>
+          <text x="252" y="62" fill="#8A5710" font-weight="700">低频</text>
+          <text x="252" y="86" fill="#8A5710">保留</text>
+          <text x="330" y="156" fill="#A8A8B0">高频</text>
+          <text x="330" y="170" fill="#A8A8B0">丢弃</text>
+          <circle cx="330" cy="62" r="3" fill="#9A6212"/>
+          <circle cx="345" cy="72" r="2.5" fill="#9A6212"/>
+          <circle cx="352" cy="86" r="2" fill="#CACAC6"/>
+          <circle cx="340" cy="100" r="1.8" fill="#CACAC6"/>
+        </g>
+
+        <!-- 右：压缩后 -->
+        <path d="M390 103 L434 103" stroke="#7C7C86" stroke-width="2" marker-end="url(#a4)"/>
+        <text x="456" y="22" font-size="12.5" font-weight="700" fill="#7C7C86">压缩结果</text>
+        <g>
+          <rect x="456" y="38" width="130" height="130" rx="6" fill="#E8EDF6"/>
+          <!-- 边缘变糊 -->
+          <rect x="456" y="38" width="65" height="65" fill="#B9C7E4" opacity="0.55"/>
+          <rect x="521" y="103" width="65" height="65" fill="#B9C7E4" opacity="0.55"/>
+          <ellipse cx="521" cy="103" rx="30" ry="30" fill="#C9D4E8"/>
+          <text x="521" y="188" text-anchor="middle" font-size="11.5" fill="#7C7C86">边缘变柔和 = 体积缩小</text>
+        </g>
+      </svg>
+    </div>
+
+    <div class="analogy" style="margin-top:22px">
+      <div class="ai">打个比方</div>
+      <div class="at">
+        把图片想成一首交响乐：<b>低频是"主旋律"</b>（大面积的色块和明暗），
+        <b>高频是"细碎的装饰音"</b>（一根根发丝、一粒粒噪点）。
+        压缩时把装饰音省掉，旋律照样听得出来，但乐谱（文件）小了一大截。
+        JPEG 的"质量"滑块，本质就是决定<b>保留到第几档高频</b>。
+      </div>
+    </div>
+
+    <div class="quest" data-quest="ch4c" style="margin-top:20px">
+      <div class="q-ico">?</div>
+      <div class="q-txt">
+        任务：JPEG 要压缩体积，应该<b>优先丢掉</b>哪部分频率？
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+          <button class="btn" data-jpg="0">低频（大色块）</button>
+          <button class="btn" data-jpg="1">高频（细碎纹理）</button>
+          <button class="btn" data-jpg="0">所有频率各丢一半</button>
+          <button class="btn" data-jpg="0">保留高频、丢掉低频</button>
+        </div>
+      </div>
+      <div class="q-state">未完成</div>
+    </div>
+  </section>
+
+  <!-- ===== 收束 ===== -->
+  <section class="wrap narrow">
+    <div class="card">
+      <h3>同一个算法，无数个场景</h3>
+      <p>
+        音频、机械、通信、雷达、医学影像、地震波分析……
+        只要一个信号能被采样，FFT 就能告诉我们"它由什么频率构成"。
+        这也是它被称为"二十世纪最重要的算法之一"的原因。
+      </p>
+      <p style="margin-bottom:0">
+        下一章用几道自测题检验理解，并附上本作品的创作说明。
+      </p>
+    </div>
+  </section>
+
+  <div class="wrap pager">
+    <a href="chapter3.html"><span class="dir">← 上一章</span><span class="ttl">蝶形舞台</span></a>
+    <a class="next" href="chapter5.html"><span class="dir">下一章 →</span><span class="ttl">自测与创作说明</span></a>
+  </div>
+</main>
+
+<footer class="site-footer"></footer>
+<script src="assets/js/site.js"></script>
+<script>
+(function () {
+  var S = window.Site, C = S.C;
+  var U = S.U(), fs = S.fs;
+
+  /* ---------- 场景 1：音频谐波 ---------- */
+  var PITCHES = [
+    { f: 110, name: '110 Hz（A2）' },
+    { f: 165, name: '165 Hz（E3）' },
+    { f: 220, name: '220 Hz（A3）' },
+    { f: 330, name: '330 Hz（E4）' },
+    { f: 440, name: '440 Hz（A4）' },
+    { f: 660, name: '660 Hz（E5）' },
+    { f: 880, name: '880 Hz（A5）' }
+  ];
+
+  var cvAudio = document.getElementById('cvAudio');
+  function drawAudio() {
+    var idx = +document.getElementById('pitch').value - 1;
+    var p = PITCHES[idx];
+    document.getElementById('lPitch').textContent = p.name;
+
+    var box = cvAudio.parentNode.getBoundingClientRect();
+    var w = Math.max(300, box.width - 40);
+    var ctx = S.fitCanvas(cvAudio, w, Math.round(262 * U));
+    S.clearDark(ctx, w, Math.round(262 * U));
+
+    var x0 = 52 * U, y0 = 26 * U, ww = w - 104 * U, hh = 178 * U;
+    var fMax = 2000, slots = 40;
+    var step = ww / slots;
+
+    S.drawGrid(ctx, { x: x0, y: y0, w: ww, h: hh }, slots, 4);
+    S.drawAxis(ctx, { x: x0, y: y0, w: ww, h: hh }, y0 + hh);
+
+    // 谐波
+    var i;
+    for (i = 1; i <= 10; i++) {
+      var f = p.f * i;
+      if (f > fMax) break;
+      var pos = (f / fMax) * slots;
+      var amp = 1 / i;
+      var bh = amp * (hh - 14);
+      var x = x0 + pos * step - step * 0.32;
+      if (i === 1) {
+        var g = ctx.createLinearGradient(0, y0 + hh - bh, 0, y0 + hh);
+        g.addColorStop(0, C.blue); g.addColorStop(1, C.violet);
+        ctx.fillStyle = g;
+        ctx.fillRect(x, y0 + hh - bh, step * 0.64, bh);
+      } else {
+        ctx.fillStyle = '#B9C7E4';
+        ctx.fillRect(x, y0 + hh - bh, step * 0.64, bh);
+      }
+    }
+
+    // 轴标签
+    ctx.fillStyle = C.fg3; ctx.font = fs(11) + 'px "JetBrains Mono", monospace';
+    [0, 500, 1000, 1500].forEach(function (f) {
+      var xx = x0 + (f / fMax) * ww;
+      ctx.fillText(f, xx - 12, y0 + hh + 19);
+    });
+    ctx.font = fs(12) + 'px sans-serif';
+    ctx.fillText('频率 (Hz)', x0 + ww - 58, y0 + hh + 38);
+    ctx.fillStyle = C.blue; ctx.fillText('■ 基频 f₀', x0 + 4, y0 + 15);
+    ctx.fillStyle = '#5E7BB8'; ctx.fillText('■ 谐波 2f₀, 3f₀…', x0 + 96, y0 + 15);
+  }
+
+  /* ---------- 场景 2：机械振动 ---------- */
+  var cvVib = document.getElementById('cvVib');
+  function drawVib() {
+    var rpm = +document.getElementById('rpm').value;
+    var fault = document.getElementById('fault').checked;
+    document.getElementById('lRpm').textContent = rpm;
+
+    var f1 = rpm / 60;   // 转频 Hz
+    var box = cvVib.parentNode.getBoundingClientRect();
+    var w = Math.max(300, box.width - 40);
+    var ctx = S.fitCanvas(cvVib, w, Math.round(262 * U));
+    S.clearDark(ctx, w, Math.round(262 * U));
+
+    var x0 = 52 * U, y0 = 26 * U, ww = w - 104 * U, hh = 178 * U;
+    var fMax = 120, slots = 60;
+    var step = ww / slots;
+
+    S.drawGrid(ctx, { x: x0, y: y0, w: ww, h: hh }, 12, 4);
+    S.drawAxis(ctx, { x: x0, y: y0, w: ww, h: hh }, y0 + hh);
+
+    // 峰：1x, 2x, 3x, 5x
+    var peaks = [
+      { f: f1,     a: fault ? 1.0 : 0.32, hl: fault, lbl: '1×' },
+      { f: 2 * f1, a: 0.22, hl: false, lbl: '2×' },
+      { f: 3 * f1, a: 0.13, hl: false, lbl: '3×' },
+      { f: 5 * f1, a: 0.08, hl: false, lbl: '5×' }
+    ];
+    var i;
+    for (i = 0; i < peaks.length; i++) {
+      var pk = peaks[i];
+      if (pk.f > fMax) continue;
+      var pos = (pk.f / fMax) * slots;
+      var bh = Math.min(1, pk.a) * (hh - 16);
+      var x = x0 + pos * step - step * 0.42;
+      if (pk.hl) {
+        var g2 = ctx.createLinearGradient(0, y0 + hh - bh, 0, y0 + hh);
+        g2.addColorStop(0, C.red); g2.addColorStop(1, '#8A322B');
+        ctx.fillStyle = g2;
+        ctx.fillRect(x, y0 + hh - bh, step * 0.84, bh);
+      } else {
+        ctx.fillStyle = '#B9C7E4';
+        ctx.fillRect(x, y0 + hh - bh, step * 0.84, bh);
+      }
+      ctx.fillStyle = pk.hl ? C.red : C.fg3;
+      ctx.font = fs(10.5) + 'px "JetBrains Mono", monospace';
+      ctx.fillText(pk.lbl, x - 2, y0 + hh - bh - 7);
+    }
+
+    ctx.fillStyle = C.fg3; ctx.font = fs(11) + 'px "JetBrains Mono", monospace';
+    [0, 30, 60, 90].forEach(function (f) {
+      var xx = x0 + (f / fMax) * ww;
+      ctx.fillText(f, xx - 8, y0 + hh + 19);
+    });
+    ctx.font = fs(12) + 'px sans-serif';
+    ctx.fillText('频率 (Hz)', x0 + ww - 58, y0 + hh + 38);
+
+    // 转频提示
+    ctx.fillStyle = C.fg2; ctx.font = fs(12) + 'px sans-serif';
+    ctx.fillText('转频 f₁ = ' + f1.toFixed(1) + ' Hz  （' + rpm + ' r/min ÷ 60）', x0 + 4, y0 + 15);
+
+    // 诊断结论
+    var diag = document.getElementById('vibDiag');
+    if (diag) {
+      if (fault) {
+        diag.style.display = 'block';
+        diag.innerHTML = '<strong>诊断结论</strong>：1× 转速频率处出现显著尖峰（' +
+          f1.toFixed(1) + ' Hz），2×/3× 相对较弱 —— 这是<strong>转子不平衡</strong>的典型特征。' +
+          '如果 2× 明显高于 1×，则应怀疑<strong>轴系不对中</strong>。';
+        if (!S.questDone('ch4')) {
+          S.completeQuest('ch4', '诊断完成！你刚刚用频谱定位了一个机械故障');
+        }
+      } else {
+        diag.style.display = 'none';
+      }
+    }
+  }
+
+  document.getElementById('pitch').addEventListener('input', drawAudio);
+  document.getElementById('rpm').addEventListener('input', drawVib);
+  document.getElementById('fault').addEventListener('change', drawVib);
+
+  // 谐波任务
+  document.querySelectorAll('[data-harm]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var ok = btn.getAttribute('data-harm') === '1';
+      if (ok) {
+        if (!S.questDone('ch4b')) {
+          S.completeQuest('ch4b', '对！3 次谐波 = 3 × 440 = 1320 Hz');
+        }
+        document.querySelectorAll('[data-harm]').forEach(function (b) { b.disabled = true; });
+      } else {
+        S.toast('提示：n 次谐波 = n × 基频', '');
+        btn.style.borderColor = 'var(--rose)';
+      }
+    });
+  });
+
+  // JPEG 压缩任务
+  document.querySelectorAll('[data-jpg]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var ok = btn.getAttribute('data-jpg') === '1';
+      if (ok) {
+        if (!S.questDone('ch4c')) {
+          S.completeQuest('ch4c', '没错！人眼对高频不敏感，丢掉它最划算');
+        }
+        document.querySelectorAll('[data-jpg]').forEach(function (b) { b.disabled = true; });
+      } else {
+        S.toast('想想：人眼对什么样的细节最不敏感？', '');
+        btn.style.borderColor = 'var(--rose)';
+      }
+    });
+  });
+
+  function redraw() { drawAudio(); drawVib(); }
+  window.addEventListener('resize', redraw);
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', redraw);
+  } else { redraw(); }
+})();
+</script>
+</body>
+</html>

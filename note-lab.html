@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>音高实验室 · 频谱与乐理 — 频谱之诗</title>
+<!-- __sp_head -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='3' fill='%2316161A'/%3E%3Cpath d='M3.5 17.5C6.2 17.5 6.2 7.5 9 7.5s2.8 10 5.5 10 2.8-10 5.5-10' stroke='%23FBFAF7' stroke-width='2.1' fill='none' stroke-linecap='round'/%3E%3Ccircle cx='20' cy='7.5' r='2.3' fill='%239A6212'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#FFFFFF">
+<meta name="description" content="《频谱之诗》延伸实验：把频率翻译成音高。弹琴键、看实时 FFT 频谱、玩听音辨频小游戏，并认识把这件事做成产品的落谱（luopu.net）。离线、零依赖。">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:title" content="音高实验室 · 频谱与乐理 — 频谱之诗">
+<meta name="og:description" content="弹琴键、看实时 FFT 频谱、玩听音辨频小游戏，并认识落谱（luopu.net）。离线、零依赖。">
+<meta name="twitter:card" content="summary">
+<link rel="stylesheet" href="assets/css/main.css?v=1791815400">
+<style>
+  .nl-hero { padding-top: 76px; }
+  .nl-hero h1 { font-size: clamp(40px, 6vw, 64px); letter-spacing: -.04em; line-height: 1.04; }
+  .nl-hero .sub { font-size: clamp(16px, 1.6vw, 19px); color: var(--fg-2); max-width: 60ch; margin-top: 22px; }
+
+  /* 钢琴键盘 */
+  .piano {
+    position: relative; display: flex; height: clamp(190px, 15vw, 250px); margin-top: 20px;
+    border: 1px solid var(--line-2); border-radius: var(--r); overflow: hidden;
+    background: var(--surface);
+  }
+  .key-white {
+    flex: 1; position: relative; border-right: 1px solid var(--line);
+    display: flex; flex-direction: column; justify-content: flex-end; align-items: center;
+    padding-bottom: 12px; cursor: pointer; background: var(--surface);
+    font-family: var(--mono); font-size: 12px; color: var(--fg-3);
+    transition: background .12s; user-select: none; -webkit-user-select: none;
+  }
+  .key-white:last-child { border-right: none; }
+  .key-white:hover { background: var(--surface-2); }
+  .key-white.active { background: var(--blue-soft); color: var(--blue); }
+  .key-black {
+    position: absolute; top: 0; width: 8%; height: 62%; background: var(--fg);
+    border: 1px solid var(--fg); border-radius: 0 0 var(--r-sm) var(--r-sm);
+    display: flex; flex-direction: column; justify-content: flex-end; align-items: center;
+    padding-bottom: 8px; cursor: pointer; color: var(--fg-4);
+    font-family: var(--mono); font-size: 10px; z-index: 2;
+    user-select: none; -webkit-user-select: none;
+  }
+  .key-black.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+
+  /* 信息读数 */
+  .note-info {
+    margin-top: 16px; padding: 16px 18px; border: 1px solid var(--line);
+    border-radius: var(--r); background: var(--surface);
+    min-height: 64px; font-size: 15px; line-height: 1.7;
+  }
+  /* 高度用 clamp 随屏幕放大；JS 渲染后会以内联 style 覆盖为精确值 */
+  .nl-spectrum-canvas { display: block; width: 100%; height: clamp(220px, 17vw, 300px); margin-top: 14px; }
+
+  /* 游戏 */
+  .game-bar { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-top: 18px; }
+  .game-meta { font-family: var(--mono); font-size: 13px; color: var(--blue); font-weight: 700; }
+  .game-result { margin-top: 14px; font-size: 15px; font-weight: 600; min-height: 22px; }
+  .game-hint { color: var(--fg-3); font-size: 14px; }
+
+  /* 落谱卡片 */
+  .luopu {
+    margin-top: 30px; padding: 22px 24px;
+    border: 1px solid var(--line); border-left: 2px solid var(--amber);
+    border-radius: var(--r); background: var(--surface);
+  }
+  .luopu h4 { margin: 0 0 10px; }
+  .luopu p { margin: 0 0 12px; font-size: 14.5px; line-height: 1.9; color: var(--fg-2); }
+  .luopu a.ext { color: var(--blue); font-weight: 600; text-decoration: none; border-bottom: 1px solid var(--blue-line); }
+
+  @media (max-width: 580px) {
+    .piano { height: clamp(150px, 12vw, 200px); }
+    .key-white { font-size: 10px; }
+    .key-black { font-size: 9px; }
+  }
+</style>
+</head>
+<body>
+<header class="topbar" data-nav="6"></header>
+
+<main>
+  <!-- ============ HERO ============ -->
+  <section class="wrap nl-hero">
+    <p class="eyebrow">延伸实验 · 频谱与乐理</p>
+    <h1>音高实验室</h1>
+    <p class="sub">
+      标题叫《频谱之诗》——"频谱"是算法，"诗"是声音。这一页把两者接到一起：
+      你弹一个音，它既是某段振动曲线，也是频谱上的一根（或几根）柱子。
+      声音只在本机合成与处理，不会上传。
+    </p>
+
+    <div class="analogy" style="margin-top:30px">
+      <div class="ai">灵感从哪来</div>
+      <div class="at">
+        我最近研究了一个叫<b>落谱（luopu.net）</b>的工具：上传一首歌，它能自动识别出旋律、和弦、歌词，
+        并转成简谱 / 五线谱 / 吉他谱，再让你在谱面上手动精修。说到底，它做的是一件和本站同源的事——
+        <b>把声音变成可读的"音"</b>。本页受它启发，但完全由我离线实现：
+        用 Web Audio 合成乐音、用实时 FFT 画出频谱，并做了一个"听音辨频"小游戏；
+        最后一节还能<b>上传你自己的音频，用本页的 FFT 实现对它做一次真实的频谱分析</b>。
+        落谱是这件事的<b>工业级产品</b>，本页是它的<b>教学切片</b>。
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 钢琴 + 实时频谱 + 听音辨频 ============ -->
+  <section class="wrap chap-head">
+    <p class="eyebrow">动手 · 弹与看</p>
+    <h2>弹一个音，看它的频谱指纹</h2>
+    <p class="lede">
+      点击下方（或键盘 Tab + 回车）任意一个琴键。你会同时<strong>听到声音</strong>，
+      并在下方看到它的<strong>实时 FFT 频谱</strong>：基频是最高那根蓝柱，2、3 次谐波是旁边更矮的蓝柱。
+      这正是"一个音 = 多个正弦成分"的耳朵版证据。
+    </p>
+
+    <div class="piano-wrap">
+      <div class="piano" id="piano"></div>
+      <div class="note-info" id="noteInfo">
+        <span class="muted">选择一个琴键，这里会显示它的音名与频率。</span>
+      </div>
+      <canvas id="noteSpectrum" class="nl-spectrum-canvas" role="img"
+              aria-label="所选琴键的实时频谱，横轴为频率，纵轴为能量，蓝柱为该音的基频与谐波"></canvas>
+      <p class="small muted" id="audioHint" style="margin-top:8px">
+        提示：音越"实"，频谱越像一根干净的柱子；本页为听感加了 2、3 次谐波，所以你会看到一组等差数列的蓝柱。
+      </p>
+    </div>
+
+    <!-- 听音辨频（与钢琴同处一节，便于直接作答） -->
+    <div class="card" style="margin-top:30px">
+      <span class="tag amber">动手 · 听音辨频</span>
+      <h3 style="margin:12px 0 10px">闭上眼睛，也能"看"频谱</h3>
+      <p class="small muted" style="margin:0 0 16px">
+        既然每个音都有固定频率，那"凭耳朵辨认音高"本质上就是"在心里跑了一遍 FFT"。
+        点「开始游戏」，系统播一个音，你从上方键盘把它找出来——点任意琴键即提交答案（同时奏响便于对比）。
+      </p>
+      <div class="grid grid-2" style="gap:16px;align-items:center;margin-bottom:6px">
+        <div>
+          <p class="game-hint" id="gameHint">点「开始游戏」，系统会播一个音，你来猜它是哪个。</p>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end">
+          <button class="btn" id="gameStart">开始游戏</button>
+          <button class="btn primary" id="gamePlay">播放题目</button>
+        </div>
+      </div>
+      <div class="game-bar">
+        <span class="game-meta" id="gameProgress">已答对 0 / 3</span>
+      </div>
+      <div class="game-result" id="gameResult" role="status" aria-live="polite"></div>
+    </div>
+
+    <div class="quest" data-quest="note_lab" style="margin-top:22px">
+      <div class="q-ico">?</div>
+      <div class="q-txt">任务：在「听音辨频」里连续答对 3 题，用耳朵 + 频谱完成一次"音频转音高"。</div>
+      <div class="q-state">未完成</div>
+    </div>
+  </section>
+
+  <!-- ============ 十二平均律 ============ -->
+  <section class="wrap">
+    <p class="eyebrow">补充 · 十二平均律</p>
+    <h2>"音高"其实是算出来的频率</h2>
+    <p class="muted prose-flow">
+      现代音乐采用<strong>十二平均律</strong>：把一个八度均分成 12 个半音，相邻半音的频率比恒为
+      <span class="mono">2^(1/12) ≈ 1.0595</span>。以 A4 = 440 Hz 为基准，任意音的频率由下面这条公式给出——
+      它和傅里叶变换无关，却解释了"为什么每个音都有一个确定的频率"，而频谱要找的正是这些频率。
+    </p>
+
+    <table class="data" style="margin-top:26px">
+      <thead>
+        <tr><th>音名</th><th>MIDI 编号</th><th>频率 (Hz)</th><th>公式代入</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>C4</td><td>60</td><td>261.63</td><td>440 × 2^((60−69)/12)</td></tr>
+        <tr><td>C#4</td><td>61</td><td>277.18</td><td>440 × 2^((61−69)/12)</td></tr>
+        <tr><td>D4</td><td>62</td><td>293.66</td><td>440 × 2^((62−69)/12)</td></tr>
+        <tr><td>D#4</td><td>63</td><td>311.13</td><td>440 × 2^((63−69)/12)</td></tr>
+        <tr><td>E4</td><td>64</td><td>329.63</td><td>440 × 2^((64−69)/12)</td></tr>
+        <tr><td>F4</td><td>65</td><td>349.23</td><td>440 × 2^((65−69)/12)</td></tr>
+        <tr><td>F#4</td><td>66</td><td>369.99</td><td>440 × 2^((66−69)/12)</td></tr>
+        <tr><td>G4</td><td>67</td><td>392.00</td><td>440 × 2^((67−69)/12)</td></tr>
+        <tr><td>G#4</td><td>68</td><td>415.30</td><td>440 × 2^((68−69)/12)</td></tr>
+        <tr><td><strong>A4</strong></td><td><strong>69</strong></td><td><strong>440.00</strong></td><td><strong>基准音</strong></td></tr>
+        <tr><td>A#4</td><td>70</td><td>466.16</td><td>440 × 2^((70−69)/12)</td></tr>
+        <tr><td>B4</td><td>71</td><td>493.88</td><td>440 × 2^((71−69)/12)</td></tr>
+        <tr><td>C5</td><td>72</td><td>523.25</td><td>440 × 2^((72−69)/12)</td></tr>
+      </tbody>
+    </table>
+    <p class="small muted prose-flow" style="margin-top:14px">
+      相邻两行频率之比都约等于 1.0595；八度（如 C4→C5）恰好是 <span class="mono">2</span> 倍——
+      这正是"高八度 = 频率翻倍"的数学来源，也是频谱图上一个音及其谐波间距的由来。
+    </p>
+  </section>
+
+  <!-- ============ 真实数据：上传音频做真实 FFT ============ -->
+  <section class="wrap">
+    <p class="eyebrow">真实数据 · 你的声音</p>
+    <h2>上传一段音频，看它真正的频谱</h2>
+    <p class="lede">
+      前面所有实验里，声音要么是我合成的、要么来自你的麦克风。这一节再进一步：
+      <strong>选一个浏览器支持的本地音频文件</strong>（如 mp3、wav、m4a 或 ogg），
+      我会用<strong>本页自己的 FFT 实现</strong>对它做一次真实的频谱分析；很短的音频也会自动补零后计算。
+    </p>
+
+    <div class="analogy" style="margin-top:24px">
+      <div class="ai">为什么要做这一节</div>
+      <div class="at">
+        落谱那类工具，第一步就是"把音频拆成音高"——而这一步在数学上，
+        正是把一段真实采样<strong>做一次傅里叶变换</strong>。
+        前面三节把它拆成了可玩的小步骤，这一节把它合回去：
+        <strong>给你自己的真实文件，输出真实的频谱。</strong>
+      </div>
+    </div>
+
+    <div class="stage" style="margin-top:26px">
+      <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+        <input type="file" id="audioFile" accept="audio/*" style="display:none">
+        <button class="btn primary" id="audioPick" type="button">选择音频文件…</button>
+        <span class="small muted" id="upStatus">尚未选择文件。支持 mp3 / wav / m4a / ogg 等浏览器能解码的格式。</span>
+      </div>
+
+      <canvas id="upWave" style="display:block;width:100%;max-width:100%;height:clamp(160px,13vw,215px);margin-top:22px" role="img"
+              aria-label="上传音频的时域波形包络"></canvas>
+      <canvas id="upSpec" style="display:block;width:100%;max-width:100%;height:clamp(160px,13vw,215px);margin-top:16px" role="img"
+              aria-label="上传音频经本页基-2 FFT 计算得到的频谱"></canvas>
+
+      <div class="note-info" id="upInfo" style="margin-top:20px">
+        <span class="muted">分析完成后，这里会显示主频及其对应的音名。</span>
+      </div>
+
+      <p class="small muted" style="margin:14px 0 0">
+        原理：先用浏览器解码出采样序列，取其中能量最大的 2048 个采样点；短音频不足时自动补零，
+        再加 Hann 窗抑制频谱泄漏，交给第 3 章那套<strong>基-2 时域抽取 FFT</strong> 逐级计算。
+        全程在你的浏览器里完成，文件不会上传到任何服务器。
+      </p>
+    </div>
+
+    <div class="quest" data-quest="note_upload" style="margin-top:22px">
+      <div class="q-ico">?</div>
+      <div class="q-txt">
+        任务：<b>上传一段浏览器支持的音频</b>，读出它的主频，并对照上面的音名表，
+        猜一猜那段声音"听起来是什么"——然后看看频谱是否支持你的猜测。
+      </div>
+      <div class="q-state">未完成</div>
+    </div>
+  </section>
+
+  <!-- ============ 落谱 reference ============ -->
+  <section class="wrap">
+    <p class="eyebrow">延伸阅读 · 现实里的同类工具</p>
+    <h2>落谱：把这件事做成产品</h2>
+
+    <div class="luopu">
+      <h4>落谱（luopu.net）</h4>
+      <p>
+        落谱是一个 AI 扒谱工具：上传一段音频（如 MP3），它先用音频识别给出旋律、和弦与歌词的初稿，
+        再让你在谱面上手动精修音高、做原曲 / 伴奏 / 人声三档混音、对齐多语言歌词，
+        最后导出简谱、五线谱、吉他谱、钢琴谱，以及图片、PDF、动态谱视频、伴奏分轨、MIDI、Guitar Pro、MusicXML。
+      </p>
+      <p>
+        它和本页做的是<strong>同一件事的工业级版本</strong>——把声音变成可读的"音"。
+        区别只在于规模：落谱面对的是一整首歌里交叠的人声、乐器与节奏；
+        本页则用一根干净的琴键，把"音频 → 频率 → 音名"这一最小单元演示给你看。
+      </p>
+      <p style="margin-bottom:0">
+        本页不依赖落谱，也不调用任何外部服务：乐音由 Web Audio 实时合成，频谱由浏览器原生 FFT 计算，
+        全部离线可跑。把它当作落谱的"原理预习"即可。
+        <br><a class="ext" href="https://www.luopu.net/" target="_blank" rel="noopener">访问落谱 ↗</a>
+      </p>
+    </div>
+  </section>
+
+  <div class="wrap pager">
+    <a href="index.html"><span class="dir">← 返回</span><span class="ttl">作品首页</span></a>
+    <a class="next" href="all-in-one.html"><span class="dir">看看全部 →</span><span class="ttl">整合总览</span></a>
+  </div>
+</main>
+
+<footer class="site-footer"></footer>
+<script src="assets/js/site.js"></script>
+<script src="assets/js/note-lab.js"></script>
+</body>
+</html>

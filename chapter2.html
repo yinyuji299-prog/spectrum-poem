@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第 2 章 · 从 DFT 到 FFT — 频谱之诗</title>
+<!-- __sp_head -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='3' fill='%2316161A'/%3E%3Cpath d='M3.5 17.5C6.2 17.5 6.2 7.5 9 7.5s2.8 10 5.5 10 2.8-10 5.5-10' stroke='%23FBFAF7' stroke-width='2.1' fill='none' stroke-linecap='round'/%3E%3Ccircle cx='20' cy='7.5' r='2.3' fill='%239A6212'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#FFFFFF">
+<meta name="description" content="拖动点数，亲眼看逐个试算与分治算法的计算量如何拉开差距，理解 FFT 的提速与位反转重排。">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:title" content="第 2 章 · 从 DFT 到 FFT — 频谱之诗">
+<meta property="og:description" content="拖动点数，亲眼看逐个试算与分治算法的计算量如何拉开差距，理解 FFT 的提速与位反转重排。">
+<meta name="twitter:card" content="summary">
+<link rel="stylesheet" href="assets/css/main.css?v=1791815400">
+</head>
+<body>
+<header class="topbar" data-nav="2"></header>
+
+<main>
+  <section class="wrap chap-head">
+    <p class="eyebrow">第 2 章</p>
+    <h2>从 DFT 到 FFT：一次"分治"带来的数量级提速</h2>
+    <p class="lede">
+      把信号从时域变到频域，最直接的办法叫 <strong>DFT（离散傅里叶变换）</strong>：
+      逐个频率去试探，数学上完全正确，但计算量大得惊人。
+      <strong>FFT</strong> 用"把大问题拆成小问题"的思路，让同一件事快了几个数量级。
+    </p>
+  </section>
+
+  <!-- ===== 前置：四个词 ===== -->
+  <section class="wrap narrow">
+    <p class="eyebrow">动手之前 · 扫清四个词</p>
+    <h3>接下来会反复用到这四个词，先一次说透</h3>
+    <p class="muted small prose-flow">
+      这四个词听起来专业，其实每个都能一句话讲明白。看完这一节，后面的公式就都读得懂了。
+    </p>
+
+    <div class="grid grid-2" style="margin-top:22px">
+      <div class="card">
+        <span class="tag blue">词 1</span>
+        <h4 style="margin:10px 0 8px">信号 —— 一段"记下来的变化"</h4>
+        <p class="small muted" style="margin:0">
+          你在手机里录的 1 秒声音、心电图的一串起伏、水温计每秒钟记下的数字——
+          只要"某个东西随时间在变，并且被记了下来"，它就是信号。
+          <strong>本作品里的"信号"就指这个，没有更玄的含义。</strong>
+        </p>
+      </div>
+      <div class="card">
+        <span class="tag blue">词 2</span>
+        <h4 style="margin:10px 0 8px">采样 —— 每秒记多少次</h4>
+        <p class="small muted" style="margin:0">
+          声音本来是连续变化的，但手机不可能记录"每一个瞬间"，只能<strong>每隔一小段时间记一个数</strong>。
+          每秒记 44100 次，就叫"采样率 44100 Hz"。记下来的这些数，
+          <strong>就是公式里的 x[0]、x[1]、x[2]…</strong>
+        </p>
+      </div>
+      <div class="card">
+        <span class="tag blue">词 3</span>
+        <h4 style="margin:10px 0 8px">正弦波 —— 世界最基础的"波动形状"</h4>
+        <p class="small muted" style="margin:0">
+          像水面波纹一样，<strong>平滑地上去、再平滑地下来，无限重复</strong>。它由三件事决定：
+          <strong>多快</strong>（频率）、<strong>多高</strong>（振幅）、<strong>从哪个位置起步</strong>（相位）。
+          <strong>记住这三个词——它们就是频谱的三个坐标。</strong>
+        </p>
+      </div>
+      <div class="card">
+        <span class="tag blue">词 4</span>
+        <h4 style="margin:10px 0 8px">频率 —— 每秒晃几次</h4>
+        <p class="small muted" style="margin:0">
+          单位是赫兹（Hz）：<strong>1 Hz = 每秒晃 1 次</strong>。
+          钢琴中央 A 是 440 Hz，意味着琴弦每秒来回 440 次。
+          人耳能听到大约 20 Hz ~ 20000 Hz。
+        </p>
+      </div>
+    </div>
+
+    <div class="analogy" style="margin-top:20px">
+      <div class="ai">打个比方</div>
+      <div class="at">
+        把它们串起来：<b>信号就是一段电影，采样就是每秒拍多少帧，正弦波就是最基本的"素材"，
+        频率就是每个素材播放的快慢。</b>傅里叶变换要干的事，就是看完这段电影后告诉你：
+        <b>它是由哪几段素材、按什么比例拼出来的。</b>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 为什么速度是刚需 ===== -->
+  <section class="wrap narrow">
+    <div class="ask" style="margin-top:0">
+      <p class="qt"><span class="ql">先问一句</span>慢一点不行吗？为什么要拼命提速？</p>
+      <p class="qd">
+        因为现实里的信号处理<strong>不是做一次就完事</strong>，而是<strong>每秒要做成千上万次</strong>：<br>
+        · 音乐播放器的频谱条，每 20 毫秒就要更新一帧 → 每秒 50 次；<br>
+        · 摄像头人脸检测，每秒要分析 30 帧图像；<br>
+        · 5G 基站、雷达、医学 CT，都是"海量数据 + 实时要求"。<br>
+        <strong>一次慢 200 倍，累积到实时场景就是"卡到没法用"。</strong>
+        比如用 DFT 做一次手机降噪，延迟要好几秒；用 FFT 只要几十毫秒——
+        这个差别决定了这功能能不能上手机。<br>
+        所以"让傅里叶变换变快"不是学术游戏，而是<strong>把不可能变成可能</strong>。
+      </p>
+    </div>
+  </section>
+
+  <!-- ===== DFT 定义 ===== -->
+  <section class="wrap narrow">
+    <p class="eyebrow">定义</p>
+    <h3>DFT：逐个频率去"试探"</h3>
+
+    <div class="ask" style="margin-bottom:20px">
+      <p class="qt"><span class="ql">怎么玩</span>先别被下面的公式吓到，它其实就一件事</p>
+      <p class="qd">
+        想象你手里有一段录音，想知道"里面有没有 100 Hz 这个音"。
+        最直接的办法：<strong>自己造一个 100 Hz 的标准正弦波，和录音逐点相乘再求和</strong>——<br>
+        如果波形对得上，乘出来的值会一直偏正，加起来是个<strong>大数</strong>；
+        如果对不上，正负会互相抵消，加起来<strong>接近零</strong>。<br>
+        "加起来多大"，就代表"这个频率有多强"。DFT 干的就是这件事，只不过把所有频率都试一遍。
+      </p>
+    </div>
+
+    <p class="muted small">
+      这里面有一个新词：<strong>"频率分量编号 k"</strong>。你可以把它理解成
+      <strong>"第几条频率的格子"</strong>——k=0 是最慢的那条（直流），k 越大频率越高。
+      DFT 就是在逐一填满这些格子。
+    </p>
+
+    <p class="muted small">
+      把上面那句话写成数学，就是 DFT 的定义式。对长度为 N 的信号 x[n]，
+      第 k 个频率分量为：
+    </p>
+    <div class="formula">
+      X[k] = Σ<sub>n=0..N−1</sub> &nbsp;x[n] &nbsp;·&nbsp; e<sup>−j·2π·k·n/N</sup>
+    </div>
+    <p class="small muted" style="margin:-6px 0 18px">
+      其中最吓人的 <span class="mono">e<sup>−j·2π·k·n/N</sup></span>，
+      其实只是一句"造一个正弦波"的紧凑写法——下面这张表会拆给你看。
+    </p>
+
+    <div class="card">
+      <h4 style="margin-bottom:10px">公式里的每个符号，逐个翻译</h4>
+      <table style="margin-top:2px">
+        <tbody>
+          <tr><td class="mono" style="color:var(--blue);width:110px">x[n]</td><td>你的原始信号，第 n 个采样点的值（实数）</td></tr>
+          <tr><td class="mono" style="color:var(--blue)">k</td><td>正在试探的频率编号，从 0 数到 N−1</td></tr>
+          <tr><td class="mono" style="color:var(--blue)">e<sup>−j·2πkn/N</sup></td><td>那个"标准正弦波"（复数形式），频率由 k 决定</td></tr>
+          <tr><td class="mono" style="color:var(--blue)">Σ</td><td>把 n 从 0 到 N−1 的所有乘积累加起来</td></tr>
+          <tr><td class="mono" style="color:var(--blue)">X[k]</td><td>试探结果——第 k 个频率的强度（复数，含幅度和相位）</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 为什么会有 e 和 j -->
+    <div class="analogy" style="margin-top:20px">
+      <div class="ai">补个概念</div>
+      <div class="at">
+        <b>为什么凭空冒出个 e 和 j？</b>因为"一个波"其实有<b>两个属性要同时记住</b>：
+        它多高（振幅）、它从哪儿起步（相位）。<br>
+        像 <span class="mono">sin(x)</span> 这种写法只能表示"从 0 开始"的波，
+        起步位置没法记。数学家的办法是把这两个属性打包成<b>一个数</b>——
+        想象一个箭头在转圈：<b>箭头有多长 = 多高，转到几点了 = 从哪儿起步。</b><br>
+        这种"转圈的箭头"写成式子就是 <span class="mono">e<sup>jθ</sup></span>，
+        其中 <b>j 只是一个记号</b>，表示"这是带旋转的数"。<br>
+        <b>你完全不用会算它</b>——只要知道：<b>它代表一个可调频率、可调相位、可调高度的标准波。</b>
+      </div>
+    </div>
+
+    <div class="analogy" style="margin-top:20px">
+      <div class="ai">换个比方</div>
+      <div class="at">
+        换个比方：<b>N 个同学两两握手</b>。每个人都要和其余 N−1 人各握一次，
+        总次数约 <b>N²/2</b>。人数翻倍，工作量几乎翻 4 倍——DFT 就是这样，
+        每个频率都要和每一个采样点"见一次面"，所以计算量按 N² 疯涨。
+      </div>
+    </div>
+    <div class="card" style="margin-top:0">
+      <h4 style="margin-bottom:8px">代价在哪里</h4>
+      <p class="small" style="margin:0">
+        每一个 k 都要做 N 次复数乘法，一共有 N 个 k，
+        总乘法约 <strong class="mono" style="color:var(--blue)">N²</strong> 次。
+        当 N = 1024，就是约 <strong>100 万</strong>次——这就是要优化它的原因。
+      </p>
+    </div>
+  </section>
+
+  <!-- ===== 运算量对比 ===== -->
+  <section class="wrap">
+    <p class="eyebrow">实验 · 运算量对比</p>
+    <h3>N 增大时，两条曲线分道扬镳</h3>
+    <p class="muted small prose-flow">
+      拖动滑块改变 N，比较 DFT 的 N² 与 FFT 的 (N/2)·log₂N。
+      注意纵轴是对数刻度——差距是"数量级"级别的。
+    </p>
+
+    <div class="quest" data-quest="ch2">
+      <div class="q-ico">?</div>
+      <div class="q-txt">
+        任务：把 N 拖到最大，看 FFT 相对 DFT 能快多少倍 —— 加速比超过 <b>500×</b> 即完成。
+      </div>
+      <div class="q-state">未完成</div>
+    </div>
+
+    <div class="stage">
+      <div class="scanline" style="z-index:3"></div>
+      <canvas id="cvOps"></canvas>
+      <div style="margin-top:20px">
+        <label class="field">信号长度 N = <span class="mono num-glow" id="lN">64</span></label>
+        <input type="range" id="nSlider" min="1" max="12" value="6" step="1">
+        <p class="small muted" style="margin:10px 0 0">
+          <span id="nPow">N = 2^6 = 64</span>
+        </p>
+      </div>
+    </div>
+
+    <div class="grid grid-2" style="margin-top:20px">
+      <div class="card">
+        <span class="tag amber">DFT</span>
+        <h3 class="mono" style="margin-top:10px" id="opsDFT">4,096</h3>
+        <p class="small muted" style="margin:0">次复数乘法</p>
+      </div>
+      <div class="card">
+        <span class="tag blue">FFT</span>
+        <h3 class="mono" style="margin-top:10px;color:var(--blue)" id="opsFFT">192</h3>
+        <p class="small muted" style="margin:0">次复数乘法 · 快 <strong id="speedup" style="color:var(--blue)">21×</strong></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 分治思想 ===== -->
+  <section class="wrap narrow">
+    <p class="eyebrow">核心思想</p>
+    <h3>把 N 点问题，拆成两个 N/2 点问题</h3>
+    <div class="ask" style="margin-top:16px">
+      <p class="qt"><span class="ql">先猜一猜</span>先别急着看公式，猜一猜</p>
+      <p class="qd">
+        如果你要给 1024 个数做变换，而直接算太慢——你会怎么办？
+        提示：有没有办法<strong>只算一半</strong>，再"拼"出另外一半的答案？
+      </p>
+    </div>
+    <p class="muted small">
+      FFT 的关键一步，是按<b>奇偶下标</b>把信号分成两半，
+      分别算两个 N/2 点的小变换 E[k]（偶数）和 O[k]（奇数），再把结果合并。
+      先用 <b>4 个数</b>走一遍，你就明白"合并"是什么：
+    </p>
+
+    <div class="card" style="margin-bottom:18px">
+      <h4 style="margin-bottom:10px">4 点例子：分两半 → 各算一半 → 拼回来</h4>
+      <p class="small" style="margin:0 0 10px">
+        原信号 <span class="mono">x[0] x[1] x[2] x[3]</span>，按奇偶拆成两组：
+      </p>
+      <p class="small" style="margin:0 0 14px">
+        <span class="tag violet">偶数组</span> <span class="mono">x[0] x[2]</span>
+        &nbsp;&nbsp;→ 算 2 点变换得到 E[0] E[1]<br>
+        <span class="tag blue">奇数组</span> <span class="mono">x[1] x[3]</span>
+        &nbsp;&nbsp;→ 算 2 点变换得到 O[0] O[1]
+      </p>
+      <p class="small" style="margin:0">
+        合并时<b>不是简单相加</b>，而是让奇数那一组先乘一个旋转因子 W，再和偶数组合并——
+        这一步就是下面公式里的 <span class="mono">W·O[k]</span>。
+      </p>
+    </div>
+
+    <p class="muted small">
+      写成公式就是这样（E 是偶数组的变换，O 是奇数组的变换）：
+    </p>
+    <div class="formula">
+      X[k] &nbsp;=&nbsp; E[k] &nbsp;+&nbsp; W<sub>N</sub><sup>k</sup> · O[k] &nbsp;&nbsp;<span style="color:var(--fg-3)">（前半）</span><br>
+      X[k + N/2] &nbsp;=&nbsp; E[k] &nbsp;−&nbsp; W<sub>N</sub><sup>k</sup> · O[k] &nbsp;&nbsp;<span style="color:var(--fg-3)">（后半）</span>
+    </div>
+    <div class="card" style="margin-top:0">
+      <h4 style="margin-bottom:8px">关键：后半段是"白送"的</h4>
+      <p class="small" style="margin:0">
+        这里的 W<sub>N</sub><sup>k</sup> = e<sup>−j·2π·k/N</sup> 叫<strong>旋转因子</strong>。
+        复指数转一圈又回到原点，所以 <strong>X[k] 和 X[k+N/2] 用的 E[k]、O[k] 完全一样</strong>，
+        只差一个符号——算一次，两边都能用。这一"加"一"减"两条式子，
+        就是一只蝴蝶的两只翅膀，<strong>蝶形运算（butterfly）</strong>由此得名。
+      </p>
+    </div>
+    <div class="analogy" style="margin-top:18px">
+      <div class="ai">打个比方</div>
+      <div class="at">
+        这招叫<b>分治（Divide &amp; Conquer）</b>，你很熟悉：拼 1000 块拼图不会从第一块硬拼到最后，
+        而是先按颜色分堆、各拼各的、最后合起来。FFT 也是把"一个大变换"反复拆成
+        "两个一半大小的变换"，拆到只剩 2 个数时直接手算，再一层层拼回来。
+      </div>
+    </div>
+    <div class="card">
+      <h4 style="margin-bottom:8px">为什么能变快</h4>
+      <p class="small" style="margin:0">
+        E 和 O 各自只需 (N/2)² 次乘法。递归下去，总复杂度从 N² 降到
+        <strong class="mono" style="color:var(--blue)">(N/2)·log₂N</strong>。
+        代价是引入"按位反转"的重排和一点点额外加法——非常划算。
+      </p>
+    </div>
+  </section>
+
+  <!-- ===== 蝶形小图 ===== -->
+  <section class="wrap">
+    <p class="eyebrow">结构预览</p>
+    <h3>一只"蝴蝶"长什么样</h3>
+    <div class="grid grid-2" style="margin-top:24px;align-items:center">
+      <div class="stage">
+        <svg viewBox="0 0 420 240" role="img" aria-label="蝶形运算单元">
+          <!-- 输入 a -->
+          <circle cx="80" cy="70" r="15" fill="#F2F0F8" stroke="#5A4A93" stroke-width="1.8"/>
+          <text x="80" y="75" text-anchor="middle" font-size="12" font-family="JetBrains Mono, monospace" fill="#443A6E">a</text>
+          <!-- 输入 b -->
+          <circle cx="80" cy="170" r="15" fill="#F2F0F8" stroke="#5A4A93" stroke-width="1.8"/>
+          <text x="80" y="175" text-anchor="middle" font-size="12" font-family="JetBrains Mono, monospace" fill="#443A6E">b</text>
+
+          <!-- 连线 -->
+          <path d="M95 70 C160 70 160 105 205 105" fill="none" stroke="#B9C7E4" stroke-width="1.8"/>
+          <path d="M95 170 C160 170 160 135 205 135" fill="none" stroke="#B9C7E4" stroke-width="1.8" stroke-dasharray="4 4"/>
+          <text x="152" y="96" font-size="12" font-family="JetBrains Mono, monospace" fill="#8A5710" font-weight="700">×W</text>
+
+          <!-- 运算节点 -->
+          <circle cx="220" cy="105" r="15" fill="#EEF1F9" stroke="#1B3F8F" stroke-width="2.2"/>
+          <text x="220" y="110" text-anchor="middle" font-size="13" font-family="JetBrains Mono, monospace" fill="#1B3F8F">+</text>
+          <circle cx="220" cy="135" r="15" fill="#EEF1F9" stroke="#1B3F8F" stroke-width="2.2"/>
+          <text x="220" y="140" text-anchor="middle" font-size="13" font-family="JetBrains Mono, monospace" fill="#1B3F8F">−</text>
+
+          <!-- 输出 -->
+          <path d="M235 105 L320 105" fill="none" stroke="#2C6B4C" stroke-width="1.8"/>
+          <path d="M235 135 L320 135" fill="none" stroke="#2C6B4C" stroke-width="1.8"/>
+          <circle cx="335" cy="105" r="15" fill="#EDF5F0" stroke="#2C6B4C" stroke-width="1.8"/>
+          <text x="335" y="110" text-anchor="middle" font-size="12" font-family="JetBrains Mono, monospace" fill="#2C6B4C">A</text>
+          <circle cx="335" cy="135" r="15" fill="#EDF5F0" stroke="#2C6B4C" stroke-width="1.8"/>
+          <text x="335" y="140" text-anchor="middle" font-size="12" font-family="JetBrains Mono, monospace" fill="#2C6B4C">B</text>
+
+          <text x="205" y="200" text-anchor="middle" font-size="12.5" font-family="JetBrains Mono, monospace" fill="#7C7C86">A = a + W·b　　B = a − W·b</text>
+        </svg>
+      </div>
+      <div>
+        <p class="small muted">
+          两个输入 a、b，经过一次旋转因子乘法，得到两个输出：
+          一个是"和"，一个是"差"。输入两条线、输出两条线，
+          中间交叉的形状像一只蝴蝶。
+        </p>
+        <p class="small muted">
+          整张 FFT 流程图就是很多只这样的蝴蝶按级排列——
+          <strong>下一章的舞台，就是把它们一只只点亮。</strong>
+        </p>
+        <a class="btn accent" href="chapter3.html" style="margin-top:10px">进入蝶形舞台 →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 位反转 ===== -->
+  <section class="wrap">
+    <p class="eyebrow">关键一步 · 位反转</p>
+    <h3>为什么 FFT 的输入顺序是"乱"的？</h3>
+    <p class="muted small prose-flow">
+      分治会不断把信号"按奇偶拆成两半"。拆到最细后，每个数的位置
+      恰好等于它<strong>原下标二进制反过来</strong>的值——这叫<strong>位反转（bit-reversal）</strong>。
+      比如 8 个点，下标 1（二进制 <span class="mono">001</span>）反转为 <span class="mono">100</span>=4，
+      所以原本的第 1 个数会跑到第 4 个位置。下面这张表就是完整对应关系。
+    </p>
+
+    <div class="analogy">
+      <div class="ai">打个比方</div>
+      <div class="at">
+        想象把一摞扑克牌反复"一分为二、交替洗牌"，洗到最后，
+        每张牌的先后顺序和原来完全打乱——但乱得<strong>有规律</strong>：
+        它等于"下标二进制倒过来读"。FFT 就是先把数据排成这个顺序，
+        再一路蝶形合并回去，最终输出的顺序反而又变整齐了。
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="svg-scroll">
+      <svg viewBox="0 0 640 250" role="img" aria-label="8 点位反转重排示意">
+        <text x="30" y="24" font-size="13" font-weight="700" fill="#7C7C86">原顺序（下标）</text>
+        <text x="30" y="140" font-size="13" font-weight="700" fill="#7C7C86">位反转后（输入顺序）</text>
+        <!-- 上行：0..7 -->
+        <g font-family="JetBrains Mono, monospace" font-size="13">
+          <rect x="30" y="36" width="64" height="34" rx="7" fill="#EEF1F9" stroke="#1B3F8F" stroke-width="1.2"/>
+          <text x="62" y="58" text-anchor="middle" fill="#16161A">0</text>
+          <rect x="104" y="36" width="64" height="34" rx="7" fill="#EEF1F9" stroke="#1B3F8F" stroke-width="1.2"/>
+          <text x="136" y="58" text-anchor="middle" fill="#16161A">1</text>
+          <rect x="178" y="36" width="64" height="34" rx="7" fill="#EEF1F9" stroke="#1B3F8F" stroke-width="1.2"/>
+          <text x="210" y="58" text-anchor="middle" fill="#16161A">2</text>
+          <rect x="252" y="36" width="64" height="34" rx="7" fill="#EEF1F9" stroke="#1B3F8F" stroke-width="1.2"/>
+          <text x="284" y="58" text-anchor="middle" fill="#16161A">3</text>
+          <rect x="326" y="36" width="64" height="34" rx="7" fill="#EEF1F9" stroke="#1B3F8F" stroke-width="1.2"/>
+          <text x="358" y="58" text-anchor="middle" fill="#16161A">4</text>
+          <rect x="400" y="36" width="64" height="34" rx="7" fill="#EEF1F9" stroke="#1B3F8F" stroke-width="1.2"/>
+          <text x="432" y="58" text-anchor="middle" fill="#16161A">5</text>
+          <rect x="474" y="36" width="64" height="34" rx="7" fill="#EEF1F9" stroke="#1B3F8F" stroke-width="1.2"/>
+          <text x="506" y="58" text-anchor="middle" fill="#16161A">6</text>
+          <rect x="548" y="36" width="64" height="34" rx="7" fill="#EEF1F9" stroke="#1B3F8F" stroke-width="1.2"/>
+          <text x="580" y="58" text-anchor="middle" fill="#16161A">7</text>
+
+          <!-- 下行：0,4,2,6,1,5,3,7 -->
+          <rect x="30" y="156" width="64" height="34" rx="7" fill="#EDF5F0" stroke="#2C6B4C" stroke-width="1.2"/>
+          <text x="62" y="178" text-anchor="middle" fill="#2C6B4C">0</text>
+          <rect x="104" y="156" width="64" height="34" rx="7" fill="#EDF5F0" stroke="#2C6B4C" stroke-width="1.2"/>
+          <text x="136" y="178" text-anchor="middle" fill="#2C6B4C">4</text>
+          <rect x="178" y="156" width="64" height="34" rx="7" fill="#EDF5F0" stroke="#2C6B4C" stroke-width="1.2"/>
+          <text x="210" y="178" text-anchor="middle" fill="#2C6B4C">2</text>
+          <rect x="252" y="156" width="64" height="34" rx="7" fill="#EDF5F0" stroke="#2C6B4C" stroke-width="1.2"/>
+          <text x="284" y="178" text-anchor="middle" fill="#2C6B4C">6</text>
+          <rect x="326" y="156" width="64" height="34" rx="7" fill="#EDF5F0" stroke="#2C6B4C" stroke-width="1.2"/>
+          <text x="358" y="178" text-anchor="middle" fill="#2C6B4C">1</text>
+          <rect x="400" y="156" width="64" height="34" rx="7" fill="#EDF5F0" stroke="#2C6B4C" stroke-width="1.2"/>
+          <text x="432" y="178" text-anchor="middle" fill="#2C6B4C">5</text>
+          <rect x="474" y="156" width="64" height="34" rx="7" fill="#EDF5F0" stroke="#2C6B4C" stroke-width="1.2"/>
+          <text x="506" y="178" text-anchor="middle" fill="#2C6B4C">3</text>
+          <rect x="548" y="156" width="64" height="34" rx="7" fill="#EDF5F0" stroke="#2C6B4C" stroke-width="1.2"/>
+          <text x="580" y="178" text-anchor="middle" fill="#2C6B4C">7</text>
+        </g>
+        <text x="30" y="214" font-size="12" fill="#7C7C86">例：1 = 001₂ → 反转为 100₂ = 4，所以 1 和 4 互换了位置。</text>
+      </svg>
+      </div>
+    </div>
+
+    <div class="quest" data-quest="ch2b" style="margin-top:22px">
+      <div class="q-ico">?</div>
+      <div class="q-txt">
+        任务：下面哪个是 <b>8 点 FFT</b> 位反转后的正确输入顺序？
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+          <button class="btn" data-br="0">0,1,2,3,4,5,6,7</button>
+          <button class="btn" data-br="0">0,2,4,6,1,3,5,7</button>
+          <button class="btn" data-br="1">0,4,2,6,1,5,3,7</button>
+          <button class="btn" data-br="0">7,6,5,4,3,2,1,0</button>
+        </div>
+      </div>
+      <div class="q-state">未完成</div>
+    </div>
+  </section>
+
+  <!-- ===== 小结 ===== -->
+  <section class="wrap narrow">
+    <div class="card">
+      <h3>本章小结</h3>
+      <p style="margin-bottom:10px">
+        回到那个问题——<strong>"这段声音里有哪几个音？"</strong>这一章我们知道了两件事：
+      </p>
+      <p class="small" style="margin:0 0 8px">
+        <strong>① 直接拆是可行的。</strong>造一个标准正弦波去和信号逐点相乘再求和，
+        对得上就是大数、对不上就抵消——把每个频率都试一遍，就得到频谱。
+      </p>
+      <p class="small" style="margin:0 0 12px">
+        <strong>② 但直接拆太慢了。</strong>N 个点要算约 N² 次，N=1024 就是 100 万次，
+        实时场景根本来不及。FFT 用"按奇偶拆半、递归合并"把这笔账降到 N·log₂N 级，
+        代价只是把数据按位反转重排一次。
+      </p>
+      <p style="margin-bottom:0">
+        <strong>但"拆半之后到底怎么合并"，这里只给了一句公式。</strong>
+        下一章我们把合并的那一步放大——<strong>看它一级一级，真的把频谱算出来。</strong>
+      </p>
+    </div>
+  </section>
+
+  <div class="wrap pager">
+    <a href="chapter1.html"><span class="dir">← 上一章</span><span class="ttl">时域与频域</span></a>
+    <a class="next" href="chapter3.html"><span class="dir">下一章 →</span><span class="ttl">蝶形舞台</span></a>
+  </div>
+</main>
+
+<footer class="site-footer"></footer>
+<script src="assets/js/site.js"></script>
+<script>
+(function () {
+  var S = window.Site, C = S.C;
+  var U = S.U(), fs = S.fs;
+  var cv = document.getElementById('cvOps');
+
+  function draw(p) {
+    var N = Math.pow(2, p);
+    var dft = N * N;
+    var fft = (N / 2) * p;
+    document.getElementById('lN').textContent = N;
+    document.getElementById('nPow').textContent = 'N = 2^' + p + ' = ' + N;
+    document.getElementById('opsDFT').textContent = dft.toLocaleString();
+    document.getElementById('opsFFT').textContent = Math.round(fft).toLocaleString();
+    document.getElementById('speedup').textContent = Math.round(dft / fft) + '×';
+
+    var box = cv.parentNode.getBoundingClientRect();
+    var w = Math.max(300, box.width - 40);
+    var ctx = S.fitCanvas(cv, w, Math.round(260 * U));
+    S.clearDark(ctx, w, Math.round(260 * U));
+
+    var x0 = 56 * U, y0 = 20 * U, ww = w - 112 * U, hh = 196 * U;
+
+    // 网格 + 纵轴刻度（对数，到 10^8）
+    ctx.font = fs(11) + 'px "JetBrains Mono", monospace';
+    for (var e = 0; e <= 8; e++) {
+      var gy = y0 + hh - hh * (e / 8);
+      ctx.strokeStyle = C.grid; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(x0, gy); ctx.lineTo(x0 + ww, gy); ctx.stroke();
+      ctx.fillStyle = C.fg3;
+      ctx.fillText('10^' + e, 10, gy + 4);
+    }
+    // 竖网格
+    ctx.strokeStyle = C.grid; ctx.lineWidth = 1;
+    for (var vx = 0; vx <= 11; vx++) {
+      var gx = x0 + ww * vx / 11;
+      ctx.beginPath(); ctx.moveTo(gx, y0); ctx.lineTo(gx, y0 + hh); ctx.stroke();
+    }
+    ctx.strokeStyle = C.axis; ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x0, y0 + hh); ctx.lineTo(x0 + ww, y0 + hh); ctx.stroke();
+
+    function X(pp) { return x0 + ww * (pp - 1) / 11; }
+    function Y(v) {
+      var lv = Math.log10(Math.max(1, v));
+      return y0 + hh - hh * Math.min(1, lv / 8);
+    }
+
+    // DFT 曲线（红：慢）
+    ctx.save();
+    ctx.strokeStyle = C.pink; ctx.lineWidth = 2.6; ctx.beginPath();
+    for (var pp = 1; pp <= 12; pp++) {
+      var n2 = Math.pow(2, pp);
+      var xx = X(pp), yy = Y(n2 * n2);
+      if (pp === 1) ctx.moveTo(xx, yy); else ctx.lineTo(xx, yy);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    // FFT 曲线（蓝：快）
+    ctx.save();
+    ctx.strokeStyle = C.blue; ctx.lineWidth = 2.6; ctx.beginPath();
+    for (pp = 1; pp <= 12; pp++) {
+      var n3 = Math.pow(2, pp);
+      var xx2 = X(pp), yy2 = Y((n3 / 2) * pp);
+      if (pp === 1) ctx.moveTo(xx2, yy2); else ctx.lineTo(xx2, yy2);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    // 当前点
+    var cx = X(p);
+    ctx.fillStyle = C.pink;
+    ctx.beginPath(); ctx.arc(cx, Y(N * N), 4.5, 0, 6.28); ctx.fill();
+    ctx.fillStyle = C.blue;
+    ctx.beginPath(); ctx.arc(cx, Y((N / 2) * p), 4.5, 0, 6.28); ctx.fill();
+
+    // 图例
+    ctx.font = fs(12) + 'px sans-serif';
+    ctx.fillStyle = C.pink; ctx.fillText('● DFT  O(N²)', x0 + 6, y0 + 14);
+    ctx.fillStyle = C.blue; ctx.fillText('● FFT  O(N log N)', x0 + 130, y0 + 14);
+    ctx.fillStyle = C.fg3;
+    ctx.fillText('横轴：N = 2^1 … 2^12', x0 + ww - 170, y0 + hh + 24);
+
+    // 任务判定：加速比 > 500
+    var sp = dft / fft;
+    if (sp >= 500 && !S.questDone('ch2')) {
+      S.completeQuest('ch2', '加速比突破 ' + Math.round(sp) + '× —— FFT 的威力就在这里');
+    } else if (sp >= 500) {
+      var bar = document.querySelector('.quest[data-quest="ch2"]');
+      if (bar) { bar.classList.add('done'); bar.querySelector('.q-state').textContent = '✓ 已完成'; }
+    }
+  }
+
+  document.getElementById('nSlider').addEventListener('input', function () {
+    draw(+this.value);
+  });
+  window.addEventListener('resize', function () { draw(+document.getElementById('nSlider').value); });
+
+  // 位反转任务
+  document.querySelectorAll('[data-br]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var ok = btn.getAttribute('data-br') === '1';
+      if (ok) {
+        if (!S.questDone('ch2b')) {
+          S.completeQuest('ch2b', '位反转顺序记牢了！0,4,2,6,1,5,3,7');
+        }
+        document.querySelectorAll('[data-br]').forEach(function (b) { b.disabled = true; });
+      } else {
+        S.toast('再想想——把每个下标写成二进制，倒过来读', '');
+        btn.style.borderColor = 'var(--rose)';
+      }
+    });
+  });
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () { draw(6); });
+  } else { draw(6); }
+})();
+</script>
+</body>
+</html>

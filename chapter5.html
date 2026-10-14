@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第 5 章 · 自测与创作说明 — 频谱之诗</title>
+<!-- __sp_head -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='3' fill='%2316161A'/%3E%3Cpath d='M3.5 17.5C6.2 17.5 6.2 7.5 9 7.5s2.8 10 5.5 10 2.8-10 5.5-10' stroke='%23FBFAF7' stroke-width='2.1' fill='none' stroke-linecap='round'/%3E%3Ccircle cx='20' cy='7.5' r='2.3' fill='%239A6212'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#FFFFFF">
+<meta name="description" content="7 道互动自测题检验前四章理解，并给出完整的作品创作说明与技术路线。">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:title" content="第 5 章 · 自测与创作说明 — 频谱之诗">
+<meta property="og:description" content="7 道互动自测题检验前四章理解，并给出完整的作品创作说明与技术路线。">
+<meta name="twitter:card" content="summary">
+<link rel="stylesheet" href="assets/css/main.css?v=1791815400">
+<style>
+  .q { margin-bottom:26px; padding-bottom:22px; border-bottom:1px solid var(--line); }
+  .q:last-child { border-bottom:none; }
+  .q h4 { margin-bottom:14px; font-size:16.5px; }
+
+  .opt {
+    display:block; padding:13px 16px; margin-bottom:8px;
+    border:1px solid var(--line); border-left:2px solid var(--line);
+    cursor:pointer;
+    font-family:var(--sans); font-size:14.5px; line-height:1.7;
+    transition:background .16s, border-color .16s;
+    background:var(--surface); color:var(--fg-2);
+  }
+  .opt:hover { border-color:var(--line-2); border-left-color:var(--blue); background:var(--surface-2); color:var(--fg); }
+  .opt.correct { border-color:#BAD5C7; border-left-color:var(--green); background:var(--green-soft); color:#245640; }
+  .opt.wrong { border-color:#E4C4C0; border-left-color:var(--rose); background:var(--rose-soft); color:#8A322B; }
+  .opt input { display:none; }
+
+  .fb { font-size:13.5px; margin-top:12px; padding:12px 16px; display:none;
+        border-left:2px solid var(--line-2); }
+  .fb.show { display:block; animation: fbIn .3s ease both; }
+  .fb.ok { background:var(--green-soft); border-left-color:var(--green); color:#245640; }
+  .fb.no { background:var(--rose-soft); border-left-color:var(--rose); color:#8A322B; }
+  @keyframes fbIn { from{opacity:0} to{opacity:1} }
+
+  .score {
+    padding:28px 30px;
+    background:var(--surface-2);
+    border:1px solid var(--line); border-left:3px solid var(--blue);
+  }
+  .score .n { font-size:44px; font-weight:700; font-family:var(--mono); color:var(--fg); line-height:1; }
+  .score .n span { color: var(--blue); }
+
+  /* 拖拽题 */
+  .dragbank { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px; }
+  .chip {
+    padding:8px 15px; border-radius:var(--r-sm);
+    background:var(--surface); border:1px solid var(--line-2); color:var(--fg);
+    font-family:var(--sans); font-size:13.5px; font-weight:600;
+    cursor:grab; user-select:none;
+    transition:border-color .16s, background .16s, color .16s;
+  }
+  .chip:hover { border-color:var(--fg); }
+  .chip.placed { background:var(--fg); color:#fff; border-color:var(--fg); }
+  .slotrow { display:grid; gap:8px; }
+  .slot {
+    display:flex; align-items:center; gap:12px;
+    border:1px dashed var(--line-2); border-left:2px solid var(--line-2);
+    padding:12px 16px;
+    font-family:var(--sans); font-size:14px; min-height:48px; background:var(--surface);
+    transition:all .16s;
+  }
+  .slot.over { border-color:var(--blue); border-left-color:var(--blue); background:var(--blue-soft); }
+  .slot .def { color:var(--fg-2); flex:1; }
+  .slot .drop { min-width:86px; text-align:center; color:var(--fg-4); font-family:var(--mono); font-size:11.5px; letter-spacing:.06em; }
+  .slot .drop.filled { color:var(--blue); font-weight:700; }
+
+  /* 成就徽章 */
+  .badge-row { margin-top:20px; }
+</style>
+</head>
+<body>
+<header class="topbar" data-nav="5"></header>
+
+<main>
+  <section class="wrap chap-head">
+    <p class="eyebrow">第 5 章</p>
+    <h2>自测与创作说明</h2>
+    <p class="lede">
+      7 道题检验前四章的理解，全部做完会给出得分。
+      最后是本作品的创作说明与技术路线。
+    </p>
+  </section>
+
+  <!-- ===== 自测 ===== -->
+  <section class="wrap narrow">
+    <p class="eyebrow">自测 · 共 7 题</p>
+
+    <!-- Q1 拖拽 -->
+    <div class="q" id="q1">
+      <h4>第 1 题　把概念拖到对应的定义上</h4>
+      <div class="dragbank" id="bank">
+        <span class="chip" draggable="true" data-k="time">时域</span>
+        <span class="chip" draggable="true" data-k="freq">频域</span>
+        <span class="chip" draggable="true" data-k="dft">DFT</span>
+        <span class="chip" draggable="true" data-k="fft">FFT</span>
+      </div>
+      <div class="slotrow">
+        <div class="slot" data-ans="time"><span class="def">描述信号幅值随时间变化的曲线</span><span class="drop">拖到这里</span></div>
+        <div class="slot" data-ans="freq"><span class="def">描述信号由哪些频率构成、各占多少</span><span class="drop">拖到这里</span></div>
+        <div class="slot" data-ans="dft"><span class="def">按定义逐个频率试探，复杂度 O(N²)</span><span class="drop">拖到这里</span></div>
+        <div class="slot" data-ans="fft"><span class="def">用分治把复杂度降到 O(N log N)</span><span class="drop">拖到这里</span></div>
+      </div>
+      <button class="btn ghost" id="checkQ1" style="margin-top:14px">检查第 1 题</button>
+      <div class="fb" id="fb1"></div>
+    </div>
+
+    <!-- Q2 单选 -->
+    <div class="q" id="q2">
+      <h4>第 2 题　当 N = 1024 时，FFT 的复数乘法次数大约是 DFT 的多少分之一？</h4>
+      <label class="opt" data-ok="0"><input type="radio" name="q2">A. 约 1/10</label>
+      <label class="opt" data-ok="0"><input type="radio" name="q2">B. 约 1/50</label>
+      <label class="opt" data-ok="1"><input type="radio" name="q2">C. 约 1/200</label>
+      <label class="opt" data-ok="0"><input type="radio" name="q2">D. 约 1/1000</label>
+      <div class="fb" id="fb2"></div>
+    </div>
+
+    <!-- Q3 单选 -->
+    <div class="q" id="q3">
+      <h4>第 3 题　在蝶形运算 A = a + W·b，B = a − W·b 中，旋转因子 W 的作用是？</h4>
+      <label class="opt" data-ok="0"><input type="radio" name="q3">A. 放大信号的振幅</label>
+      <label class="opt" data-ok="1"><input type="radio" name="q3">B. 调整相位（复数旋转），使两路能够正确相加/相减</label>
+      <label class="opt" data-ok="0"><input type="radio" name="q3">C. 滤除高频噪声</label>
+      <label class="opt" data-ok="0"><input type="radio" name="q3">D. 把实数变成整数</label>
+      <div class="fb" id="fb3"></div>
+    </div>
+
+    <!-- Q4 单选 -->
+    <div class="q" id="q4">
+      <h4>第 4 题　对一个"冲激信号"（只在第 0 点有值，其余为 0）做 FFT，频谱会是什么样？</h4>
+      <label class="opt" data-ok="0"><input type="radio" name="q4">A. 只有第 0 个频率有能量</label>
+      <label class="opt" data-ok="1"><input type="radio" name="q4">B. 所有频率都有相同能量（频谱平坦）</label>
+      <label class="opt" data-ok="0"><input type="radio" name="q4">C. 能量集中在最高频</label>
+      <label class="opt" data-ok="0"><input type="radio" name="q4">D. 无法计算</label>
+      <div class="fb" id="fb4"></div>
+    </div>
+
+    <!-- Q5 相位 -->
+    <div class="q" id="q5">
+      <h4>第 5 题　两个频率、振幅都相同的正弦波叠加，什么时候合成结果会"完全抵消"？</h4>
+      <label class="opt" data-ok="0"><input type="radio" name="q5">A. 相位差 0°</label>
+      <label class="opt" data-ok="1"><input type="radio" name="q5">B. 相位差 180°（反相）</label>
+      <label class="opt" data-ok="0"><input type="radio" name="q5">C. 相位差 90°</label>
+      <label class="opt" data-ok="0"><input type="radio" name="q5">D. 相位差 45°</label>
+      <div class="fb" id="fb5"></div>
+    </div>
+
+    <!-- Q6 位反转 -->
+    <div class="q" id="q6">
+      <h4>第 6 题　8 点 FFT 中，原下标 3（二进制 011）在"位反转"重排后会去到哪里？</h4>
+      <label class="opt" data-ok="0"><input type="radio" name="q6">A. 位置 3</label>
+      <label class="opt" data-ok="0"><input type="radio" name="q6">B. 位置 4</label>
+      <label class="opt" data-ok="1"><input type="radio" name="q6">C. 位置 6（011 → 110）</label>
+      <label class="opt" data-ok="0"><input type="radio" name="q6">D. 位置 5</label>
+      <div class="fb" id="fb6"></div>
+    </div>
+
+    <!-- Q7 图像压缩 -->
+    <div class="q" id="q7">
+      <h4>第 7 题　JPEG 等图像压缩算法会优先丢弃哪一类频率成分？</h4>
+      <label class="opt" data-ok="0"><input type="radio" name="q7">A. 低频（大面积色块）</label>
+      <label class="opt" data-ok="1"><input type="radio" name="q7">B. 高频（细碎纹理与边缘）</label>
+      <label class="opt" data-ok="0"><input type="radio" name="q7">C. 直流分量</label>
+      <label class="opt" data-ok="0"><input type="radio" name="q7">D. 完全随机丢弃</label>
+      <div class="fb" id="fb7"></div>
+    </div>
+
+    <div style="text-align:center">
+      <button class="btn primary" id="submitAll">提交全部并计分</button>
+    </div>
+    <div class="score" id="scoreBox" style="display:none;margin-top:24px">
+      <p style="margin:0 0 6px;opacity:.7;font-size:13px;letter-spacing:.1em;text-transform:uppercase">你的得分</p>
+      <div class="n"><span id="scoreNum">0</span> / 7</div>
+      <p style="margin:12px 0 0;font-size:14px;opacity:.85" id="scoreMsg"></p>
+    </div>
+  </section>
+
+  <!-- ===== 成就 ===== -->
+  <section class="wrap narrow">
+    <p class="eyebrow">探索成就</p>
+    <h3>你在前面几章解锁了什么</h3>
+    <p class="muted small">完成各章的互动任务即可点亮徽章。</p>
+
+    <div class="badge-row grid grid-2" style="margin-top:20px">
+      <div class="badge" data-badge="ch1">
+        <div class="ico">○</div>
+        <div><b>频率猎人</b><br><span class="small muted">第 1 章 · 锁定神秘信号频率</span></div>
+      </div>
+      <div class="badge" data-badge="ch1b">
+        <div class="ico">○</div>
+        <div><b>消噪工程师</b><br><span class="small muted">第 1 章 · 发现反相抵消</span></div>
+      </div>
+      <div class="badge" data-badge="ch2">
+        <div class="ico">○</div>
+        <div><b>加速猎手</b><br><span class="small muted">第 2 章 · 突破 500× 加速比</span></div>
+      </div>
+      <div class="badge" data-badge="ch2b">
+        <div class="ico">○</div>
+        <div><b>洗牌大师</b><br><span class="small muted">第 2 章 · 看懂位反转</span></div>
+      </div>
+      <div class="badge" data-badge="ch3">
+        <div class="ico">○</div>
+        <div><b>频谱解码者</b><br><span class="small muted">第 3 章 · 找到多峰信号</span></div>
+      </div>
+      <div class="badge" data-badge="ch3b">
+        <div class="ico">○</div>
+        <div><b>对数直觉</b><br><span class="small muted">第 3 章 · 算出蝶形级数</span></div>
+      </div>
+      <div class="badge" data-badge="ch4">
+        <div class="ico">○</div>
+        <div><b>机械医师</b><br><span class="small muted">第 4 章 · 诊断转子故障</span></div>
+      </div>
+      <div class="badge" data-badge="ch4b">
+        <div class="ico">○</div>
+        <div><b>音律通</b><br><span class="small muted">第 4 章 · 算出谐波频率</span></div>
+      </div>
+      <div class="badge" data-badge="ch4c">
+        <div class="ico">○</div>
+        <div><b>压缩大师</b><br><span class="small muted">第 4 章 · 理解 JPEG 取舍</span></div>
+      </div>
+      <div class="badge" data-badge="ch5">
+        <div class="ico">○</div>
+        <div><b>满分学者</b><br><span class="small muted">第 5 章 · 自测全对</span></div>
+      </div>
+      <div class="badge" data-badge="live_mic">
+        <div class="ico">○</div>
+        <div><b>真实捕手</b><br><span class="small muted">真实信号 · 用声音做实时频谱</span></div>
+      </div>
+      <div class="badge" data-badge="live_harm">
+        <div class="ico">○</div>
+        <div><b>合成工匠</b><br><span class="small muted">动手合成 · 拼出任意波形</span></div>
+      </div>
+      <div class="badge" data-badge="note_lab">
+        <div class="ico">○</div>
+        <div><b>辨音耳</b><br><span class="small muted">音高实验室 · 听音辨频认出音高</span></div>
+      </div>
+      <div class="badge" data-badge="note_upload">
+        <div class="ico">○</div>
+        <div><b>实录分析师</b><br><span class="small muted">音高实验室 · 上传音频跑真实 FFT</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 创作说明 ===== -->
+  <section class="wrap narrow">
+    <p class="eyebrow">创作说明</p>
+    <h2>作品概述</h2>
+    <p>
+      《频谱之诗》是一个关于 <strong>FFT（快速傅里叶变换）</strong> 的交互式科普网站。
+      它把这条通常只出现在信号处理教材里的公式，拆成五章与 1 个延伸实验、共 14 个可动手的互动任务，
+      让没有数学背景的观众也能亲手"看见"频谱是怎么被算出来的。
+    </p>
+
+    <h3 style="margin-top:28px">为什么选这个题目</h3>
+    <p>
+      频谱分析是现代工程的"通用语言"——手机降噪、电机监测、医学影像、
+      无线通信都依赖它。但它对初学者最大的门槛不在公式本身，
+      而在于<strong>"看不见"</strong>：DFT 是逐点累加，FFT 是分治合并，
+      教材上的流程图静态、抽象，看完仍然不知道每一步在干什么。
+    </p>
+    <p>
+      本作品的核心假设是：<strong>只要把每一步画出来、并且允许观众自己改参数，
+      理解就会自然发生。</strong>
+    </p>
+
+    <h3 style="margin-top:28px">与同类作品的区别</h3>
+    <div class="grid grid-2" style="margin-top:14px">
+      <div class="card">
+        <h4>常见的 FFT 教学材料</h4>
+        <p class="small muted" style="margin:6px 0 0">
+          静态流程图、公式推导、预制动画。观众只能"看"，不能"改"。
+        </p>
+      </div>
+      <div class="card hi">
+        <h4>本作品</h4>
+        <p class="small muted" style="margin:6px 0 0">
+          参数可改、逐级可停、结果实时联动。
+          观众输入自己的信号，亲眼看到频谱随之变化。
+        </p>
+      </div>
+    </div>
+
+    <h3 style="margin-top:28px">章节结构</h3>
+    <table>
+      <thead><tr><th>章节</th><th>内容</th><th>交互</th></tr></thead>
+      <tbody>
+        <tr><td>第 1 章</td><td>时域与频域</td><td>三成分合成 / 频率试探扫描 / 反相抵消</td></tr>
+        <tr><td>第 2 章</td><td>从 DFT 到 FFT</td><td>运算量对数曲线对比 / 位反转重排</td></tr>
+        <tr><td>第 3 章</td><td>蝶形舞台（核心）</td><td>8 点 FFT 逐级展开 + 实时频谱</td></tr>
+        <tr><td>第 4 章</td><td>频谱之用</td><td>音频谐波 / 机械振动 / 图像压缩</td></tr>
+        <tr><td>第 5 章</td><td>自测与说明</td><td>7 道互动题</td></tr>
+      </tbody>
+    </table>
+
+    <h3 style="margin-top:28px">技术路线</h3>
+    <ul>
+      <li><strong>纯前端静态实现</strong>：HTML5 + CSS3 + 原生 JavaScript，无框架、无构建步骤。</li>
+      <li><strong>图形方案</strong>：结构图用 SVG（矢量、可缩放）；波形与频谱用 Canvas 2D 绘制。</li>
+      <li><strong>算法实现</strong>：内置按定义实现的 DFT 与基-2 时域抽取 FFT，
+          保留每一级的中间快照，用于逐级回放。</li>
+      <li><strong>离线可用</strong>：不依赖任何 CDN 或外部接口，双击 <span class="mono">index.html</span> 即可完整运行。</li>
+      <li><strong>响应式</strong>：桌面端与移动端均可浏览。</li>
+    </ul>
+
+    <h3 style="margin-top:28px">工具使用声明</h3>
+    <p class="small muted">
+      本作品为原创开发。算法实现、界面设计、文案撰写均为团队成员完成，
+      并在开发过程中使用 AI 辅助工具进行代码调试与文字润色。
+      作品不包含任何第三方受版权保护的素材；所有图形均由代码实时生成，
+      字体使用系统内置字体，无外部资源依赖。
+    </p>
+
+    <h3 style="margin-top:30px">本作品三大创新</h3>
+    <div class="grid grid-3" style="margin-top:14px">
+      <div class="card hi">
+        <h4>把不可见的算法"演"出来</h4>
+        <p class="small muted" style="margin:6px 0 0">
+          将 DFT / FFT 的每一步画成可逐级回放的「蝶形舞台」，
+          把静态流程图变成可停、可改、可对照的运算过程。
+        </p>
+      </div>
+      <div class="card hi">
+        <h4>零依赖 · 可离线 · 全代码生成</h4>
+        <p class="small muted" style="margin:6px 0 0">
+          24 块 Canvas 的核心波形与频谱均由代码逐点绘制；
+          双击即跑，便于二次传播与教学改造。
+        </p>
+      </div>
+      <div class="card hi">
+        <h4>真实数据落地</h4>
+        <p class="small muted" style="margin:6px 0 0">
+          用麦克风对用户的声音做实时频谱，
+          并支持上传浏览器可解码的音频、由本页自带的 FFT 实现做真实频谱分析，
+          把抽象的"变换"落到个人可感知的体验——这是合成演示做不到的。
+        </p>
+      </div>
+    </div>
+
+    <h3 style="margin-top:30px">参考与延伸</h3>
+    <ul class="small" style="line-height:1.9">
+      <li>高斯（C. F. Gauss）在 1805 年前后为计算小行星轨道发展出的插值方法中，已隐含与 FFT 相同的分治思路，但因未及时发表而鲜为人知；Cooley 与 Tukey 1965 年的论文使这一方法系统化并广泛流传——即今天所说的「重新发现」（历史考证参见 Heideman, Johnson &amp; Burrus, 1984）。</li>
+      <li>Cooley, J. W., &amp; Tukey, J. W. (1965). <em>An Algorithm for the Machine Calculation of Complex Fourier Series.</em> <span class="mono">Mathematics of Computation</span>, 19(90), 297–301.（FFT 的现代形式由此确立）</li>
+      <li>奈奎斯特–香农采样定理：连续信号离散化的理论边界，决定了频谱能分析到的最高频率。</li>
+      <li>吉布斯现象（Gibbs phenomenon）：方波等跳变信号的傅里叶级数在间断点附近的过冲——本作品「谐波叠加实验室」可亲手复现。</li>
+      <li>旋转因子的几何意义：复数 <span class="mono">W = e^(−j·2πk/N)</span> 即单位圆上的旋转，是蝶形运算的本质。</li>
+    </ul>
+
+    <div class="card" style="margin-top:26px">
+      <h4 style="margin-bottom:8px">一句话总结</h4>
+      <p style="margin:0">
+        把 O(N²) 讲成看得见的舞台——让 FFT 从公式变成一场可以亲手参与的运算。
+      </p>
+    </div>
+  </section>
+
+  <div class="wrap pager">
+    <a href="chapter4.html"><span class="dir">← 上一章</span><span class="ttl">频谱之用</span></a>
+    <a class="next" href="index.html"><span class="dir">回到 ↑</span><span class="ttl">作品首页</span></a>
+  </div>
+</main>
+
+<footer class="site-footer"></footer>
+<script src="assets/js/site.js"></script>
+<script>
+(function () {
+  var S = window.Site;
+  /* ---------- Q1 拖拽 ---------- */
+  var bank = document.getElementById('bank');
+  var slots = document.querySelectorAll('.slot');
+  var dragKey = null;
+
+  document.querySelectorAll('.chip').forEach(function (chip) {
+    chip.addEventListener('dragstart', function () {
+      dragKey = this.getAttribute('data-k');
+      this.style.opacity = '.45';
+    });
+    chip.addEventListener('dragend', function () { this.style.opacity = '1'; });
+    // 触屏兜底：点击选中
+    chip.addEventListener('click', function () {
+      document.querySelectorAll('.chip').forEach(function (c) { c.classList.remove('placed'); });
+      this.classList.add('placed');
+      dragKey = this.getAttribute('data-k');
+    });
+  });
+
+  slots.forEach(function (slot) {
+    slot.addEventListener('dragover', function (e) { e.preventDefault(); this.classList.add('over'); });
+    slot.addEventListener('dragleave', function () { this.classList.remove('over'); });
+    slot.addEventListener('drop', function (e) {
+      e.preventDefault(); this.classList.remove('over');
+      if (dragKey) place(this, dragKey);
+    });
+    slot.addEventListener('click', function () {
+      if (dragKey) place(this, dragKey);
+    });
+  });
+
+  function place(slot, key) {
+    var name = { time: '时域', freq: '频域', dft: 'DFT', fft: 'FFT' }[key];
+    slot.setAttribute('data-pick', key);
+    var drop = slot.querySelector('.drop');
+    drop.textContent = name;
+    drop.classList.add('filled');
+    // 清掉已放置的 chip 高亮
+    document.querySelectorAll('.chip').forEach(function (c) {
+      if (c.getAttribute('data-k') === key) c.classList.remove('placed');
+    });
+    dragKey = null;
+  }
+
+  document.getElementById('checkQ1').addEventListener('click', function () {
+    var right = 0;
+    slots.forEach(function (s) {
+      var ok = s.getAttribute('data-pick') === s.getAttribute('data-ans');
+      if (ok) right++;
+      s.style.borderColor = ok ? '#2C6B4C' : '#97372F';
+      s.style.background = ok ? '#EDF5F0' : '#FAEFED';
+    });
+    var fb = document.getElementById('fb1');
+    fb.className = 'fb show ' + (right === 4 ? 'ok' : 'no');
+    fb.textContent = right === 4
+      ? '✓ 全部正确！你已经分清了四个核心概念。'
+      : '答对 ' + right + ' / 4。提示：把"时间轴上画出来"和"频率轴上画出来"分开想。';
+  });
+
+  /* ---------- Q2-Q4 单选 ---------- */
+  function bindSingle(qid, fbId, explain) {
+    var opts = document.querySelectorAll('#' + qid + ' .opt');
+    opts.forEach(function (o) {
+      o.addEventListener('click', function () {
+        opts.forEach(function (x) { x.classList.remove('correct', 'wrong'); });
+        var ok = o.getAttribute('data-ok') === '1';
+        o.classList.add(ok ? 'correct' : 'wrong');
+        if (!ok) {
+          opts.forEach(function (x) { if (x.getAttribute('data-ok') === '1') x.classList.add('correct'); });
+        }
+        var fb = document.getElementById(fbId);
+        fb.className = 'fb show ' + (ok ? 'ok' : 'no');
+        fb.textContent = (ok ? '✓ 正确。' : '✗ 不对，正确答案已标绿。') + explain;
+      });
+    });
+  }
+  bindSingle('q2', 'fb2', ' N=1024 时 DFT 需 1024²≈100 万次复乘，FFT 只需 (1024/2)×10≈5000 次，相差约 200 倍。');
+  bindSingle('q3', 'fb3', ' W = e^(−j·2πk/N) 是单位圆上的复数，只改变相位、不改变幅值。');
+  bindSingle('q4', 'fb4', ' 冲激在时域"最集中"，因此频域"最分散"——所有频率等量出现。');
+  bindSingle('q5', 'fb5', ' 反相（180°）时波峰对波谷，正好互相抵消——降噪耳机就是这个原理。');
+  bindSingle('q6', 'fb6', ' 3 = 011₂，二进制倒过来是 110₂ = 6，所以去位置 6。');
+  bindSingle('q7', 'fb7', ' 人眼对高频细节不敏感，丢掉它体积变小、观感几乎无损——这是 JPEG 的核心取舍。');
+
+  /* ---------- 计分 ---------- */
+  document.getElementById('submitAll').addEventListener('click', function () {
+    var score = 0;
+    // Q1
+    var q1ok = true;
+    slots.forEach(function (s) {
+      if (s.getAttribute('data-pick') !== s.getAttribute('data-ans')) q1ok = false;
+    });
+    if (q1ok) score++;
+    // Q2-Q7
+    ['q2', 'q3', 'q4', 'q5', 'q6', 'q7'].forEach(function (qid) {
+      var sel = document.querySelector('#' + qid + ' .opt.correct');
+      if (sel) score++;
+    });
+    document.getElementById('scoreNum').textContent = score;
+    var box = document.getElementById('scoreBox');
+    box.style.display = 'block';
+    var msg = score === 7 ? '满分！你已经完整掌握了 FFT 的核心直觉与应用。'
+      : score >= 6 ? '非常棒——回看一下错的那一题所在的章节。'
+      : score >= 5 ? '基础扎实，建议重看第 2、3 章补上细节。'
+      : score >= 3 ? '再走一遍前两章，实验都动手做一次。'
+      : '别急，从第 1 章重新走一遍，每个实验都亲手试试。';
+    document.getElementById('scoreMsg').textContent = msg;
+    box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    // 满分 → 解锁徽章
+    if (score === 7 && !S.questDone('ch5')) {
+      S.completeQuest('ch5', '成就解锁：满分学者');
+    }
+    syncBadges();
+  });
+
+  /* ---------- 成就徽章 ---------- */
+  function syncBadges() {
+    document.querySelectorAll('.badge[data-badge]').forEach(function (b) {
+      if (S.questDone(b.getAttribute('data-badge'))) b.classList.add('on');
+    });
+  }
+  syncBadges();
+})();
+</script>
+</body>
+</html>
