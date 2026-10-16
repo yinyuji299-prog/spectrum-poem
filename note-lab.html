@@ -19,30 +19,35 @@
   .nl-hero h1 { font-size: clamp(40px, 6vw, 64px); letter-spacing: -.04em; line-height: 1.04; }
   .nl-hero .sub { font-size: clamp(16px, 1.6vw, 19px); color: var(--fg-2); max-width: 60ch; margin-top: 22px; }
 
-  /* 钢琴键盘 */
+  /* 钢琴键盘：灰色琴床 + 白键 + 可见分隔，避免与页面白底融为一体 */
   .piano {
     position: relative; display: flex; height: clamp(190px, 15vw, 250px); margin-top: 20px;
     border: 1px solid var(--line-2); border-radius: var(--r); overflow: hidden;
-    background: var(--surface);
+    background: #E5E5E0;
+    padding: 4px 5px 0; gap: 1px;
+    box-shadow: inset 0 0 18px rgba(17,17,17,.06);
   }
   .key-white {
-    flex: 1; position: relative; border-right: 1px solid var(--line);
+    flex: 1; position: relative;
     display: flex; flex-direction: column; justify-content: flex-end; align-items: center;
-    padding-bottom: 12px; cursor: pointer; background: var(--surface);
-    font-family: var(--mono); font-size: 12px; color: var(--fg-3);
+    padding-bottom: 12px; cursor: pointer; background: #fff;
+    font-family: var(--mono); font-size: 12px; color: var(--fg-2);
+    border-radius: 3px 3px 0 0;
+    box-shadow: 0 -1px 0 rgba(255,255,255,.8) inset, 0 2px 0 rgba(17,17,17,.05) inset;
     transition: background .12s; user-select: none; -webkit-user-select: none;
   }
-  .key-white:last-child { border-right: none; }
-  .key-white:hover { background: var(--surface-2); }
-  .key-white.active { background: var(--blue-soft); color: var(--blue); }
+  .key-white:hover { background: #fbfbfb; }
+  .key-white.active { background: var(--blue-soft); color: var(--blue); box-shadow: inset 0 0 0 1px var(--blue-line); }
   .key-black {
-    position: absolute; top: 0; width: 8%; height: 62%; background: var(--fg);
-    border: 1px solid var(--fg); border-radius: 0 0 var(--r-sm) var(--r-sm);
+    position: absolute; top: 0; width: 7.5%; height: 60%; background: #1f1f1f;
+    border: 1px solid #161616; border-radius: 0 0 var(--r-sm) var(--r-sm);
     display: flex; flex-direction: column; justify-content: flex-end; align-items: center;
-    padding-bottom: 8px; cursor: pointer; color: var(--fg-4);
+    padding-bottom: 8px; cursor: pointer; color: #e8e8e8;
     font-family: var(--mono); font-size: 10px; z-index: 2;
     user-select: none; -webkit-user-select: none;
+    box-shadow: 0 2px 2px rgba(0,0,0,.12);
   }
+  .key-black:hover { background: #111; }
   .key-black.active { background: var(--blue); color: #fff; border-color: var(--blue); }
 
   /* 信息读数 */
