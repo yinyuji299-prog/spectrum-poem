@@ -138,7 +138,7 @@
   }
 
   /* 文档 */
-  .ov-docs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; }
+  .ov-docs { display: grid; grid-template-columns: 1fr; gap: 0; }
   .ov-docs a {
     display: block; text-decoration: none; color: inherit;
     border-top: 1px solid var(--line);
@@ -189,15 +189,13 @@
     <a href="#sec5"><span class="num">5</span> 自测与说明</a>
     <a href="note-lab.html" target="_blank"><span class="num">延</span> 音高实验室</a>
     <div class="sep"></div>
-    <h4>说明文档</h4>
-    <a href="docs/创作说明.md"><span class="num">·</span> 创作说明</a>
-    <a href="docs/技术原理.md"><span class="num">·</span> 技术原理</a>
-    <a href="docs/README.md"><span class="num">·</span> 使用说明</a>
+    <h4>算法校验</h4>
+    <a href="check.html"><span class="num">·</span> 六项检查可当场重跑</a>
 
     <div class="qp">
       <div class="lbl">任务进度</div>
       <div class="qp-track"><div class="qp-fill"></div></div>
-      <div class="n num-glow quest-progress">0 / 14</div>
+      <div class="n num-glow quest-progress">0 / 13</div>
     </div>
   </aside>
 
@@ -229,25 +227,17 @@
 
     <section class="ov-sec" id="sec6">
       <div class="ov-sec-head">
-        <div class="badge">文</div>
+        <div class="badge">验</div>
         <div>
-          <h3>说明文档</h3>
-          <div class="sub">创作说明 / 技术原理 / 使用说明</div>
+          <h3>算法校验</h3>
+          <div class="sub">FFT 与按定义 DFT 的逐点比对，六项检查在浏览器里当场跑完</div>
         </div>
       </div>
       <div style="padding:22px 24px">
         <div class="ov-docs">
-          <a href="docs/创作说明.md">
-            <h4>创作说明</h4>
-            <p>选题背景、章节结构、技术路线、算法验证数据、工具使用声明</p>
-          </a>
-          <a href="docs/技术原理.md">
-            <h4>技术原理</h4>
-            <p>DFT 定义、旋转因子、基-2 时域抽取推导、复杂度对比、位反转</p>
-          </a>
-          <a href="docs/README.md">
-            <h4>使用说明</h4>
-            <p>运行方式、推荐观看顺序、各章交互操作指南、兼容性</p>
+          <a href="check.html">
+            <h4>打开校验页</h4>
+            <p>位反转重排、逐点比对、单频定位、Parseval 能量守恒、运算量比值、Hann 窗端点</p>
           </a>
         </div>
       </div>

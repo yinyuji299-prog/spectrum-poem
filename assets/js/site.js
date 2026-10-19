@@ -303,7 +303,8 @@
   /* ================= 互动任务系统 ================= */
 
   // 任务总清单：所有可完成的任务 id 都在这里（进度条据此统计）
-  var TASKS = ['ch1', 'ch1b', 'ch2', 'ch2b', 'ch3', 'ch3b', 'ch4', 'ch4b', 'ch4c', 'ch5', 'live_mic', 'live_harm', 'note_lab', 'note_upload'];
+  // 计数口径：13 个带任务条的互动任务；第 5 章自测只发徽章，不计入进度分母
+  var TASKS = ['ch1', 'ch1b', 'ch2', 'ch2b', 'ch3', 'ch3b', 'ch4', 'ch4b', 'ch4c', 'live_mic', 'live_harm', 'note_lab', 'note_upload'];
   var QUEST_KEY = 'spectrum_poem_quests_v3';
 
   function loadQuests() {
