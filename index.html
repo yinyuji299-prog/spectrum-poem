@@ -7,11 +7,11 @@
 <!-- __sp_head -->
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='3' fill='%2316161A'/%3E%3Cpath d='M3.5 17.5C6.2 17.5 6.2 7.5 9 7.5s2.8 10 5.5 10 2.8-10 5.5-10' stroke='%23FBFAF7' stroke-width='2.1' fill='none' stroke-linecap='round'/%3E%3Ccircle cx='20' cy='7.5' r='2.3' fill='%239A6212'/%3E%3C/svg%3E">
 <meta name="theme-color" content="#FFFFFF">
-<meta name="description" content="把 FFT（快速傅里叶变换）从一条教材公式，变成可拖动、看得见的交互实验：五章与 1 个延伸实验、共 14 个互动任务，全部图形由代码实时绘制。零依赖、离线可跑。">
+<meta name="description" content="把 FFT（快速傅里叶变换）从一条教材公式，变成可拖动、看得见的交互实验：五章与 1 个延伸实验、共 13 个互动任务，全部图形由代码实时绘制。零依赖、离线可跑。">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:title" content="频谱之诗 · FFT 算法的视觉化与交互式科普">
-<meta property="og:description" content="把 FFT（快速傅里叶变换）从一条教材公式，变成可拖动、看得见的交互实验：五章与 1 个延伸实验、共 14 个互动任务，全部图形由代码实时绘制。零依赖、离线可跑。">
+<meta property="og:description" content="把 FFT（快速傅里叶变换）从一条教材公式，变成可拖动、看得见的交互实验：五章与 1 个延伸实验、共 13 个互动任务，全部图形由代码实时绘制。零依赖、离线可跑。">
 <meta name="twitter:card" content="summary">
 <link rel="stylesheet" href="assets/css/main.css?v=1791815400">
 <style>
@@ -229,7 +229,7 @@
     <div class="analogy">
       <div class="ai">如果你也曾对着公式发懵</div>
     <div class="at">
-        别急。我们不背公式，只回答一个你其实早就问过的问题：<b>一段混在一起的声音里，
+        这里不背公式，只回答一个问题：<b>一段混在一起的声音里，
         到底藏着哪几个音？</b>带着它往下走就行——每章末尾都有一个能动手的任务，做完会亮起一枚徽章。
       </div>
     </div>
@@ -253,9 +253,8 @@
       <p class="preface-text">
         做这件作品前，我翻过不少 FFT 的教程。它们大多很正确，也很像——先抛定义，再甩公式，
         最后留一句"显然可得"。可我当年卡住的那个点，从来不是公式本身，而是"为什么非得这么干"。
- 于是我换了个做法：把算法拆成能拖、能点、能听见的小步子，让每一步都先"动起来"再讲道理。
-     里面的动画和频谱条，没有一张是贴图，全是我用代码一点一点画出来的——包括你头顶那段会呼吸的频谱。
-        如果它让你对某件事少了一点"显然"、多了一点"原来如此"，那这件作品就达到了它的目的。
+ 于是我换了个做法：把算法拆成能拖、能点、能听见的小步子，让每一步先"动起来"再讲道理。
+     里面的动画和频谱条，没有一张是贴图，全是用代码画出来的。
       </p>
     </div>
 
@@ -267,7 +266,7 @@
     <div class="grid grid-2" style="margin-top:8px">
       <div class="card">
         <h3>把算法拆成能拖、能点、能听见的小步子</h3>
-        <p>市面上的 FFT 教程大多"先定义、再公式、最后留一句显然可得"。我们没有另写一套理论，而是把同一个 FFT 拆成可拖动的滑块、可点击的推进按钮、可听见的频率——让每一步先动起来，再讲道理。这是面向同龄学习者的教学设计创新。</p>
+        <p>把同一个 FFT 拆成可拖动的滑块、可点击的推进按钮、可听见的频率，让每一步先动起来，再讲道理。教学顺序是按这个思路重新排的。</p>
       </div>
       <div class="card">
         <h3>每一帧都是代码实时算出来的</h3>
@@ -519,7 +518,7 @@
       <tbody>
         <tr>
           <td>章节</td>
-          <td>5 章 + 1 个延伸实验（音高实验室），共 14 个可动手的互动任务</td>
+          <td>5 章 + 1 个延伸实验（音高实验室），共 13 个可动手的互动任务</td>
         </tr>
         <tr>
           <td>图形</td>
