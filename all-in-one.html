@@ -287,6 +287,8 @@
     st.id = '__embed_style';
     st.textContent =
       '.topbar{display:none!important}' +
+      /* 嵌入视图里站点自带的悬浮章节导航会压在正文上，一并隐藏 */
+      '.side-nav{display:none!important}' +
       '.site-footer{display:none!important}' +
       'section:first-of-type{padding-top:36px!important}' +
       '.pager{display:none!important}' +
@@ -341,6 +343,28 @@
       requestAnimationFrame(tick);
     }
     f.addEventListener('load', function () { requestAnimationFrame(tick); });
+  });
+
+  /* file:// 下父页面读不到 iframe 内部（跨源），上面那套测量会静默失败，
+     框架停在 600px 被裁掉。子页面会主动 postMessage 自己的高度，
+     这里按来源匹配到对应框架后写入。 */
+  window.addEventListener('message', function (e) {
+    var d = e.data;
+    if (!d || d.type !== 'sp-embed-height' || !d.height) return;
+    var hs = host.querySelectorAll('iframe');
+    for (var j = 0; j < hs.length; j++) {
+      try {
+        if (hs[j].contentWindow === e.source) {
+          var want = Math.max(300, Math.round(d.height));
+          if (Math.abs(parseFloat(hs[j].style.height) - want) > 2) {
+            hs[j].style.height = want + 'px';
+          }
+          var ld2 = document.getElementById('ld' + CH[j].n);
+          if (ld2) ld2.style.display = 'none';
+          break;
+        }
+      } catch (err) { /* 忽略 */ }
+    }
   });
 
   /* 目录高亮 */

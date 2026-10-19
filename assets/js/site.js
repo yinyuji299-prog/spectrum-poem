@@ -79,6 +79,41 @@
         '第十四届全国大学生数字媒体科技作品及创意竞赛　·　' +
         '自主选题 · 智慧教育与科普</p></div>';
     }
+
+    /* 被总览页以 iframe 嵌入时，隐藏本站自己的顶栏、悬浮章节导航与页脚。
+       父页面在 file:// 下读不到 iframe 内部（跨源限制），所以这件事由子页面
+       自己判断，而不是靠父页面注入样式；高度也由这里主动上报。 */
+    try {
+      if (global.self !== global.top) {
+        document.documentElement.className += ' sp-embed';
+        reportHeight();
+      }
+    } catch (e) { /* 跨源时读取 top 会抛错，等同于处于 iframe 中 */ }
+  }
+
+  /* 把自己的高度发给父页面，让总览页的嵌入框跟着撑开。
+     画布与图片加载完高度还会变，所以分几次发。 */
+  function reportHeight() {
+    var last = 0, tries = 0;
+    function send() {
+      var de = document.documentElement, b = document.body;
+      var h = Math.max(
+        de ? de.scrollHeight : 0,
+        de ? de.offsetHeight : 0,
+        b ? b.scrollHeight : 0,
+        b ? b.offsetHeight : 0
+      );
+      if (h > 0 && Math.abs(h - last) > 2) {
+        last = h;
+        try { global.parent.postMessage({ type: 'sp-embed-height', height: h }, '*'); }
+        catch (e) { /* 忽略 */ }
+      }
+      tries++;
+      if (tries < 60) setTimeout(send, 250);
+    }
+    send();
+    global.addEventListener('load', function () { setTimeout(send, 60); });
+    global.addEventListener('resize', function () { setTimeout(send, 60); });
   }
 
   /* ---------------- 尺寸系统（大屏可读性） ----------------

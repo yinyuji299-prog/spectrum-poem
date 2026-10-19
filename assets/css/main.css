@@ -75,6 +75,16 @@ line-height: 1.82;
 
 :focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
 
+/* ================= 被总览页嵌入时的精简视图 =================
+   site.js 检测到自己处在 iframe 中，就给 <html> 加上 .sp-embed。
+   这里隐藏顶栏、悬浮章节导航与页脚，只保留正文。 */
+html.sp-embed .topbar,
+html.sp-embed .side-nav,
+html.sp-embed .site-footer,
+html.sp-embed .pager { display: none !important; }
+html.sp-embed body { padding-bottom: 0; }
+html.sp-embed section:first-of-type { padding-top: 36px; }
+
 /* ================= 顶栏 ================= */
 .topbar {
   position: sticky; top: 0; z-index: 50;
