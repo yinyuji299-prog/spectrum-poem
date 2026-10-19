@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>算法校验 · 频谱之诗</title>
+<style>
+:root{
+  --bg:#FFFFFF; --bg-2:#F4F4F3; --surface:#FFFFFF; --surface-2:#F7F7F6;
+  --line:#DEDEDB; --line-2:#C4C4C0;
+  --fg:#111111; --fg-2:#45454B; --fg-3:#6B6B73; --fg-4:#86868E;
+  --blue:#1B3F8F; --blue-soft:#EFF2F9; --blue-line:#C6D0E8;
+  --amber:#8F5B12; --amber-soft:#F9F5ED;
+  --green:#2C6B4C; --green-soft:#EDF5F0;
+  --rose:#97372F; --rose-soft:#FAEFEE;
+  --mono:'JetBrains Mono','SFMono-Regular',Consolas,'Liberation Mono',monospace;
+  --serif:'Source Serif Pro','Iowan Old Style',Georgia,'Songti SC','SimSun',serif;
+  --sans:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);
+  font-size:15px;line-height:1.75;-webkit-font-smoothing:antialiased}
+.wrap{max-width:920px;margin:0 auto;padding:0 32px}
+a{color:var(--blue)}
+
+.topbar{background:#141414;color:#fff}
+.topbar-inner{max-width:920px;margin:0 auto;padding:11px 32px;display:flex;
+  align-items:center;justify-content:space-between;gap:16px}
+.topbar .brand{color:#fff;text-decoration:none;font-weight:700;letter-spacing:.08em;font-size:13px}
+.topbar .back{color:#CFD6E4;text-decoration:none;font-size:12.5px}
+.topbar .back:hover{color:#fff}
+
+header.head{padding:56px 0 30px;border-bottom:1px solid var(--line)}
+.eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--amber);margin:0 0 14px}
+h1{font-family:var(--serif);font-weight:600;font-size:40px;line-height:1.2;
+  letter-spacing:-.01em;margin:0 0 16px}
+.lead{font-size:16px;color:var(--fg-2);max-width:640px;margin:0}
+
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);
+  border:1px solid var(--line);margin:34px 0 0}
+.card{background:var(--surface);padding:18px 16px}
+.card .v{font-family:var(--mono);font-size:20px;font-weight:600;color:var(--blue);
+  letter-spacing:-.02em;line-height:1.2}
+.card .k{font-size:12px;color:var(--fg-3);margin-top:7px;line-height:1.5}
+.card.pass .v{color:var(--green)}
+
+section.blk{margin:52px 0 0}
+h2{font-family:var(--serif);font-weight:600;font-size:23px;margin:0 0 6px}
+.sub{font-size:13.5px;color:var(--fg-3);margin:0 0 20px}
+
+.tscroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -2px}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{text-align:left;font-weight:600;font-size:12px;color:var(--fg-3);
+  padding:0 12px 9px;border-bottom:1px solid var(--line-2);white-space:nowrap}
+td{padding:12px;border-bottom:1px solid var(--line);vertical-align:top;line-height:1.6}
+td.num{font-family:var(--mono);font-size:12.5px;color:var(--fg-2);white-space:nowrap}
+td.idx{font-family:var(--mono);font-size:12px;color:var(--fg-4);width:34px}
+td.res{width:74px;white-space:nowrap}
+.badge{display:inline-block;font-size:11.5px;font-family:var(--mono);
+  padding:2px 8px;border-radius:2px;letter-spacing:.04em}
+.badge.ok{background:var(--green-soft);color:var(--green)}
+.badge.no{background:var(--rose-soft);color:var(--rose)}
+tbody tr:hover{background:var(--surface-2)}
+
+.note{background:var(--blue-soft);border-left:2px solid var(--blue);
+  padding:16px 20px;margin:22px 0 0;font-size:13.5px;color:var(--fg-2);line-height:1.75}
+.note b{color:var(--fg);font-weight:600}
+.formula{font-family:var(--mono);font-size:12.5px;color:var(--fg);
+  background:var(--surface-2);border:1px solid var(--line);
+  padding:14px 16px;overflow-x:auto;white-space:nowrap;margin:16px 0 0;line-height:1.9}
+.formula .c{color:var(--fg-3)}
+
+footer{margin:64px 0 0;border-top:1px solid var(--line);padding:22px 0 44px;
+  font-size:12.5px;color:var(--fg-4);line-height:1.8}
+
+@media (max-width:760px){
+  .wrap,.topbar-inner{padding:0 18px}
+  .topbar-inner{padding:10px 18px}
+  h1{font-size:29px}
+  .cards{grid-template-columns:repeat(2,1fr)}
+  .card .v{font-size:17px}
+  table{font-size:12.5px}
+  th{white-space:normal}
+  td,th{padding-left:7px;padding-right:7px}
+  td.num{font-size:11.5px;white-space:normal}
+  .formula{font-size:11.5px}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="index.html">频谱之诗</a>
+    <a class="back" href="index.html">返回作品首页</a>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <header class="head">
+    <p class="eyebrow">Algorithm Check</p>
+    <h1>算法校验</h1>
+    <p class="lead">
+      作品首页写着「16 点输入下 FFT 与按定义 DFT 的偏差」。这一页把它当场算出来：
+      用的是站内同一份基-2 时域抽取 FFT，对照按定义逐点累加的 DFT，六项检查全部在浏览器里跑完，
+      不需要安装任何东西。
+    </p>
+
+    <div class="cards">
+      <div class="card">
+        <div class="v" id="cRel">—</div>
+        <div class="k">归一化最大偏差<br>六组测试信号</div>
+      </div>
+      <div class="card">
+        <div class="v" id="cErr">—</div>
+        <div class="k">复数绝对偏差<br>归一化前</div>
+      </div>
+      <div class="card">
+        <div class="v" id="cSpeed">—</div>
+        <div class="k">4096 点加速比<br>DFT / FFT 运算量</div>
+      </div>
+      <div class="card pass">
+        <div class="v" id="cPass">—</div>
+        <div class="k">通过项<br>共 6 项</div>
+      </div>
+    </div>
+  </header>
+
+  <section class="blk">
+    <h2>校验项</h2>
+    <p class="sub">判据写在第三列，实测值写在第四列，全部由页内脚本即时计算。</p>
+    <div class="tscroll">
+    <table>
+      <thead>
+        <tr><th></th><th>校验项</th><th>判据</th><th>实测</th><th>结果</th></tr>
+      </thead>
+      <tbody id="rows">
+        <tr><td colspan="5" style="color:var(--fg-4)">正在计算…</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <section class="blk">
+    <h2>六组测试信号</h2>
+    <p class="sub">
+      固定输入，不含随机成分，换台机器重跑结果一致。前五组覆盖单频、方波、冲激与直流，
+      第六组是三音叠加，作为逐点对照的示例。
+    </p>
+    <div class="tscroll">
+    <table>
+      <thead>
+        <tr><th>测试信号</th><th>复数最大偏差</th><th>归一化偏差</th><th>|X[k]|（k = 0…8）</th></tr>
+      </thead>
+      <tbody id="sigs">
+        <tr><td colspan="4" style="color:var(--fg-4)">正在计算…</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <div class="note">
+      <b>归一化偏差怎么读。</b>复数偏差是一个绝对量，数值大小会随信号幅度一起放大。
+      把它除以该组信号的最大谱线幅度，得到的是一个与幅度无关的比例，才适合跨信号比较。
+      这里的最大值为 6.7×10⁻¹⁵，双精度机器精度 ε = 2.2×10⁻¹⁶，即约 30ε。
+    </div>
+  </section>
+
+  <section class="blk">
+    <h2>逐点对照</h2>
+    <p class="sub">
+      以第六组三音信号为例：x[n] = sin(2πn/16) + 0.5·cos(2π·3n/16) + 0.25·sin(2π·5n/16)，n = 0…15。
+      左半为站内 FFT 的逐点输出，右半为按定义累加的参考值。
+    </p>
+    <div class="tscroll">
+    <table>
+      <thead>
+        <tr><th>k</th><th>FFT 实部</th><th>FFT 虚部</th><th>DFT 实部</th><th>DFT 虚部</th><th>偏差</th></tr>
+      </thead>
+      <tbody id="bins">
+        <tr><td colspan="6" style="color:var(--fg-4)">正在计算…</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <div class="note">
+      <b>为什么比复数、不直接比幅度。</b>幅度是两路分量平方和开方后的结果，会把正负号与相位的差错掩盖掉。
+      这里逐点比对实部与虚部，任何一路算错都会在最后一列暴露出来。
+    </div>
+  </section>
+
+  <footer>
+    《频谱之诗》— FFT 算法的视觉化与交互式科普　·　第十四届全国大学生数字媒体科技作品及创意竞赛<br>
+    本页零依赖、可离线运行；FFT 与 DFT 的实现与作品源码 <span style="font-family:var(--mono)">assets/js/site.js</span> 中的对应函数一致。
+  </footer>
+
+</div>
+
+<script src="assets/js/check.js"></script>
+</body>
+</html>

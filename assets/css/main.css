@@ -714,3 +714,8 @@ ol.steps > li::after {
   .wrap { padding: 0 20px; }
   .card { padding: 22px 20px; }
 }
+
+/* 算法校验页入口（首页规格表「校验」一行） */
+.chk-inline{color:var(--blue);text-decoration:none;
+  border-bottom:1px solid var(--blue-line);padding-bottom:1px;}
+.chk-inline:hover{color:var(--fg);border-bottom-color:var(--fg-4);}
